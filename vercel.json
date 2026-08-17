@@ -1,7 +1,10 @@
 {
   "version": 2,
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api/router" }
+  ],
   "functions": {
-    "api/[...path].js": {
+    "api/router.js": {
       "maxDuration": 30
     }
   }
