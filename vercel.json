@@ -1,3 +1,12 @@
 {
-  "version": 2
+  "version": 2,
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api/router.js" }
+  ],
+  "functions": {
+    "api/router.js": {
+      "runtime": "nodejs20.x",
+      "maxDuration": 30
+    }
+  }
 }

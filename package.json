@@ -5,6 +5,5 @@
   "description": "全屋智能选品 - Vercel + Supabase 部署",
   "dependencies": {
     "@supabase/supabase-js": "^2.45.4"
-  },
-  "type": "module"
+  }
 }
