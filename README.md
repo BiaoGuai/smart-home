@@ -109,3 +109,5 @@ Vercel 会**自动重新部署**（GitHub 每次 push 触发），1~2 分钟生�
 
 **Q：管理员登录失败？**
 确认 `schema.sql` 在 Supabase SQL Editor 里执行成功（看到"已初始化完成"）。可重新执行一次（脚本有 `on conflict do nothing`，幂等安全）。
+
+<!-- trigger redeploy Mon, Aug 17, 2026  5:42:24 PM -->
