@@ -1,0 +1,1160 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"/>
+<title>全屋智能选品</title>
+<style>
+:root{
+  --teal:#0F6E56; --teal-dark:#085041; --teal-50:#E1F5EE;
+  --price:#E24B4A; --amber:#BA7517; --amber-50:#FAEEDA;
+  --bg:#F5F6F8; --card:#FFFFFF; --text:#1F2937; --text2:#6B7280; --text3:#9CA3AF;
+  --border:#E5E7EB; --pink-50:#FBEAF0; --pink:#993556; --red-50:#FCEBEB;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;background:#162325;color:var(--text);-webkit-tap-highlight-color:transparent;-webkit-font-smoothing:antialiased}
+#balatro-bg{position:fixed;inset:0;width:100%;height:100%;z-index:0;display:block}
+#app{position:relative;z-index:1;min-height:100vh}
+.icon{display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
+.icon svg{display:block}
+
+.btn{width:100%;padding:13px;background:var(--teal);color:#fff;border:none;border-radius:12px;font-size:16px;font-weight:500;cursor:pointer;transition:opacity .15s,background .15s}
+.btn:active{background:var(--teal-dark)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.input{width:100%;padding:13px 14px;background:#fff;border:1px solid var(--border);border-radius:12px;font-size:15px;outline:none;transition:border .15s,box-shadow .15s;color:var(--text)}
+.input:focus{border-color:var(--teal);box-shadow:0 0 0 3px rgba(15,110,86,.1)}
+.input::placeholder{color:var(--text3)}
+
+.login-wrap{min-height:100vh;display:flex;flex-direction:column;background:transparent}
+.login-card{background:#fff;border-radius:20px;border:1px solid var(--border);padding:26px 22px;margin:0 16px}
+.err-msg{padding:12px;background:var(--red-50);border:1px solid #fecaca;border-radius:12px;color:#B91C1C;font-size:13px;margin-bottom:14px;line-height:1.5}
+.field-label{display:block;font-size:13px;font-weight:500;color:#374151;margin-bottom:6px}
+.remember-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.checkbox{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text2);cursor:pointer}
+.checkbox input{width:16px;height:16px;accent-color:var(--teal)}
+.forgot-link{font-size:12px;color:var(--text2);cursor:pointer;background:none;border:none;padding:0}
+.modal-overlay{position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;padding:16px;animation:fadeIn .15s}
+.modal-box{background:#fff;border-radius:16px;width:100%;max-width:360px;padding:22px;animation:pop .18s}
+.modal-box h3{font-size:16px;font-weight:500;margin-bottom:10px}
+.modal-box p{font-size:14px;color:#4B5563;line-height:1.6;margin-bottom:6px}
+.modal-actions{display:flex;gap:10px;margin-top:16px}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes pop{from{transform:scale(.95);opacity:0}to{transform:scale(1);opacity:1}}
+
+.header{position:sticky;top:0;z-index:10;background:#fff;border-bottom:1px solid var(--border)}
+.room-scroll{display:flex;overflow-x:auto;padding:0 14px 12px;gap:8px;-ms-overflow-style:none;scrollbar-width:none}
+.room-scroll::-webkit-scrollbar{display:none}
+.room-tab{flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:5px;padding:9px 12px;border-radius:16px;font-size:11px;font-weight:500;border:1px solid var(--border);background:#fff;color:var(--text2);cursor:pointer;transition:all .15s;min-width:62px}
+.room-tab .rt-icon{width:26px;height:26px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:#F3F4F6;font-size:15px}
+.room-tab.active{background:var(--teal);color:#fff;border-color:var(--teal)}
+.room-tab.active .rt-icon{background:rgba(255,255,255,.2)}
+.room-tab .badge{padding:1px 6px;border-radius:8px;font-size:10px;font-weight:500}
+.room-tab.active .badge{background:#fff;color:var(--teal)}
+.room-tab:not(.active) .badge{background:var(--teal-50);color:var(--teal)}
+.room-tab{cursor:pointer;position:relative}
+.room-tab.editing{border-style:dashed;border-color:var(--amber);background:#FFFBEB}
+.room-add,.room-edit-btn{flex-shrink:0;width:46px;height:60px;border-radius:14px;border:1px dashed var(--border);background:#fff;color:var(--text2);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;padding:0}
+.room-add:hover,.room-edit-btn:hover{background:var(--teal-50);color:var(--teal);border-color:var(--teal);border-style:solid}
+.room-add:active,.room-edit-btn:active{transform:scale(.95)}
+.room-edit-btn.active{background:var(--teal);color:#fff;border-color:var(--teal);border-style:solid}
+.room-del{position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;background:var(--red-50);color:#B91C1C;border:1px solid #fecaca;font-size:14px;font-weight:500;display:flex;align-items:center;justify-content:center;line-height:1}
+
+.filter-bar{display:flex;align-items:center;justify-content:space-between;padding:12px 16px 8px}
+.filter-btn{display:flex;align-items:center;gap:6px;padding:7px 13px;border-radius:9px;border:1px solid var(--border);background:#fff;font-size:13px;color:var(--text);cursor:pointer}
+.filter-btn.active{background:var(--teal);color:#fff;border-color:var(--teal)}
+.filter-count{background:var(--price);color:#fff;font-size:10px;padding:1px 5px;border-radius:8px;min-width:16px;text-align:center}
+
+.product-grid{display:grid;grid-template-columns:1fr 1fr;gap:11px;padding:0 14px;padding-bottom:20px}
+.product-card{position:relative;background:#fff;border-radius:16px;padding:14px 13px;border:1.5px solid var(--border);cursor:pointer;transition:all .15s}
+.product-card:active{transform:scale(.97)}
+.product-card.selected{border-color:var(--teal);box-shadow:0 4px 16px rgba(15,110,86,.12)}
+.p-icon{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:var(--teal-50);color:var(--teal);margin-bottom:10px}
+.product-card:not(.selected) .p-icon{background:#F3F4F6;color:var(--text2)}
+.p-name{font-size:14px;font-weight:500;color:var(--text);margin-bottom:3px;line-height:1.3}
+.p-brand{font-size:11px;color:var(--teal);margin-bottom:5px}
+.p-desc{font-size:11px;color:var(--text3);margin-bottom:10px;line-height:1.4;min-height:30px}
+.p-bottom{display:flex;align-items:center;justify-content:space-between}
+.p-price{font-size:17px;font-weight:500;color:var(--price)}
+.p-check{width:22px;height:22px;border-radius:50%;border:1.5px solid #D1D5DB;display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0}
+.p-check.checked{background:var(--teal);border-color:var(--teal)}
+.p-check.checked::after{content:'';width:10px;height:5px;border-left:2px solid #fff;border-bottom:2px solid #fff;transform:rotate(-45deg) translate(0,-1px)}
+.stepper{display:flex;align-items:center;gap:8px}
+.stepper button{width:26px;height:26px;border-radius:8px;border:1px solid var(--border);background:#fff;color:var(--teal);font-size:16px;font-weight:500;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.stepper button:active{background:var(--teal-50)}
+.stepper .cnt{font-size:14px;font-weight:500;min-width:18px;text-align:center;color:var(--text)}
+.tag{position:absolute;top:10px;right:10px;font-size:10px;font-weight:500;padding:2px 7px;border-radius:6px}
+.tag.rec{background:var(--teal-50);color:var(--teal)}
+.tag.hot{background:var(--amber-50);color:var(--amber)}
+.tag.new{background:var(--pink-50);color:var(--pink)}
+.tag.must{background:var(--red-50);color:#B91C1C}
+
+.bottom-bar{position:fixed;bottom:58px;left:0;right:0;background:#fff;border-top:1px solid var(--border);padding:12px 16px;z-index:20}
+.summary-strip{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+
+.tab-bar{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--border);display:flex;z-index:30;padding-bottom:env(safe-area-inset-bottom)}
+.tab-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:9px 0;font-size:11px;color:var(--text3);cursor:pointer;background:none;border:none;transition:color .15s}
+.tab-item.active{color:var(--teal)}
+.tab-item .ti{width:22px;height:22px;display:flex;align-items:center;justify-content:center}
+
+.plans-wrap{padding:16px 14px;padding-bottom:90px}
+.plans-head{font-size:16px;font-weight:500;margin-bottom:14px;color:#fff}
+.plan-card{background:#fff;border:1px solid var(--border);border-radius:16px;padding:16px;margin-bottom:12px;cursor:pointer;transition:all .15s;position:relative;overflow:hidden}
+.plan-card:active{transform:scale(.98)}
+.plan-card .pc-top{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.plan-card .pc-icon{width:40px;height:40px;border-radius:12px;background:var(--teal-50);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.plan-card .pc-name{font-size:15px;font-weight:500;color:var(--text)}
+.plan-card .pc-desc{font-size:12px;color:var(--text3);margin-bottom:12px;line-height:1.5}
+.plan-card .pc-meta{display:flex;align-items:center;justify-content:space-between}
+.plan-card .pc-count{font-size:12px;color:var(--text2)}
+.plan-card .pc-price{font-size:16px;font-weight:500;color:var(--price)}
+.pc-actions{display:flex;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)}
+.mini-btn{padding:6px 14px;border-radius:8px;font-size:12px;font-weight:500;border:1px solid var(--border);background:#fff;color:var(--text2);transition:all .12s;white-space:nowrap;cursor:pointer}
+.mini-btn.primary{color:var(--teal);border-color:#9FE1CB}
+.mini-btn.primary:hover{background:var(--teal-50)}
+.mini-btn.danger{color:#B91C1C;border-color:#fecaca}
+.mini-btn.danger:hover{background:var(--red-50)}
+.product-pick{max-height:280px;overflow-y:auto;border:1px solid var(--border);border-radius:12px;padding:8px}
+.pick-group{margin-bottom:10px}
+.pick-room{font-size:12px;font-weight:500;color:var(--text2);margin-bottom:6px}
+.pick-item{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:8px;cursor:pointer;font-size:13px;color:var(--text)}
+.pick-item:hover{background:#F8FAFC}
+.pick-item input{accent-color:var(--teal);width:16px;height:16px}
+.pick-item .pi-name{flex:1}
+.pick-item .pi-price{color:var(--price);font-weight:500}
+
+.filter-panel{padding:0 16px 16px;max-height:70vh;overflow-y:auto}
+.fp-section{margin-bottom:18px}
+.fp-title{font-size:13px;font-weight:500;color:var(--text);margin-bottom:10px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{padding:7px 14px;border-radius:18px;border:1px solid var(--border);background:#fff;font-size:13px;color:var(--text2);cursor:pointer;transition:all .12s}
+.chip.active{background:var(--teal);color:#fff;border-color:var(--teal)}
+
+.modal-overlay2{position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.5);display:flex;align-items:flex-end;animation:fadeIn .2s}
+.modal-sheet{background:#fff;border-radius:20px 20px 0 0;width:100%;max-height:88vh;overflow-y:auto;animation:slideUp .25s}
+.modal-handle{width:40px;height:4px;background:#D1D5DB;border-radius:2px;margin:12px auto 0}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.summary-item{display:flex;align-items:center;gap:11px;background:#F9FAFB;border-radius:12px;padding:11px 12px;margin-bottom:8px}
+.summary-item .s-icon{width:34px;height:34px;border-radius:9px;background:var(--teal-50);color:var(--teal);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.s-info{flex:1;min-width:0}
+.s-name{font-size:14px;font-weight:500;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.s-desc{font-size:11px;color:var(--text3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.s-price{font-size:14px;font-weight:500;color:var(--price);flex-shrink:0}
+.room-section{margin-bottom:16px}
+.room-section-title{display:flex;align-items:center;gap:6px;margin-bottom:8px;font-size:14px}
+.rs-name{font-weight:500;color:var(--text)}
+.rs-count{margin-left:auto;font-size:12px;color:var(--text3)}
+.loading{display:flex;justify-content:center;align-items:center;padding:60px 0;color:rgba(255,255,255,.55);font-size:14px}
+
+/* 科普 */
+.article-card{background:#fff;border:1px solid var(--border);border-radius:16px;padding:16px;margin-bottom:12px;cursor:pointer;transition:all .15s}
+.article-card:active{transform:scale(.98)}
+.article-card .a-top{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.article-card .a-cover{width:44px;height:44px;border-radius:12px;background:var(--teal-50);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+.article-card .a-title{font-size:15px;font-weight:500;color:var(--text);line-height:1.4}
+.article-card .a-summary{font-size:12px;color:var(--text2);line-height:1.6;margin-bottom:8px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.article-card .a-date{font-size:11px;color:var(--text3)}
+.article-detail{padding:20px 18px 30px}
+.article-detail h1{font-size:20px;font-weight:500;color:var(--text);line-height:1.4;margin-bottom:12px}
+.article-detail .a-meta{font-size:12px;color:var(--text3);margin-bottom:18px}
+.article-detail .a-content p{font-size:15px;color:#374151;line-height:1.8;margin-bottom:14px}
+
+/* 海报 */
+.poster-preview{background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 8px 30px rgba(0,0,0,.15)}
+.poster-preview canvas{display:block;width:100%;height:auto}
+</style>
+</head>
+<body data-lpignore="true" data-1p-ignore="true">
+<canvas id="balatro-bg" aria-hidden="true"></canvas>
+<div id="app"></div>
+
+<script>
+const ICON_SVG = {
+  light:'<circle cx="12" cy="9" r="4"/><path d="M12 2v2M12 20v2M2 9h2M20 9h2"/>',
+  curtain:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 12h18M12 5v14"/>',
+  camera:'<rect x="3" y="7" width="13" height="11" rx="2"/><path d="M16 10l5-3v10l-5-3"/><circle cx="9.5" cy="12.5" r="2.5"/>',
+  switch:'<rect x="5" y="5" width="14" height="14" rx="2"/><circle cx="12" cy="12" r="2"/>',
+  speaker:'<rect x="6" y="3" width="12" height="18" rx="2"/><circle cx="12" cy="15" r="3"/>',
+  thermo:'<path d="M14 14.8V5a2 2 0 0 0-4 0v9.8a4 4 0 1 0 4 0z"/>',
+  sensor:'<path d="M12 12h.01"/><path d="M12 8a4 4 0 0 1 4 4M12 4a8 8 0 0 1 8 8"/>',
+  gateway:'<circle cx="12" cy="12" r="8"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18"/>',
+  gas:'<path d="M12 3c1.5 3-3 5-3 9a5 5 0 0 0 10 0c0-3-2-4-3-6-1 2-2 2-4 1z"/>',
+  smoke:'<path d="M4 18a3 3 0 0 1 0-6 4 4 0 0 1 7-2.5A5 5 0 0 1 20 12a3 3 0 0 1 0 6H4z"/>',
+  plug:'<path d="M9 2v5M15 2v5M6 7h12v4a6 6 0 0 1-12 0V7zM12 17v5"/>',
+  heater:'<rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 8h8M8 12h8M8 16h8"/>',
+  dryer:'<path d="M12 6a2 2 0 0 1 2-2M12 6a2 2 0 0 0-2-2M12 6v15M15 18a3 3 0 0 0 3-3M9 18a3 3 0 0 1-3-3"/>',
+  lamp:'<path d="M8 3h8l-1 8H9L8 3z"/><path d="M9 11h6v3a3 3 0 0 1-6 0v-3zM12 17v4M8 21h8"/>',
+  bell:'<path d="M18 9a6 6 0 1 0-12 0c0 5-2 6-2 6h16s-2-1-2-6"/><path d="M10 20a2 2 0 0 0 4 0"/>',
+  lock:'<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
+  box:'<path d="M3 7l9-4 9 4v10l-9 4-9-4V7z"/><path d="M3 7l9 4 9-4M12 11v10"/>',
+  robot:'<rect x="4" y="7" width="16" height="12" rx="3"/><path d="M12 7V4M9 4h6"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/>',
+  air:'<path d="M4 12h11M12 9a3 3 0 0 0 0 6h4"/>',
+  lightstrip:'<path d="M4 10v4M20 10v4M6 12h12"/>',
+  humidifier:'<path d="M12 3c3 4 5 7 5 10a5 5 0 0 1-10 0c0-3 2-6 5-10z"/>',
+  aroma:'<path d="M12 3c4 5 6 8 6 11a6 6 0 0 1-12 0c0-3 2-6 6-11z"/>',
+  eye:'<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
+  home:'<path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/>',
+  plan:'<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',
+  filter:'<path d="M3 5h18l-7 8v5l-4 2v-7L3 5z"/>',
+  science:'<circle cx="11" cy="11" r="7"/><path d="M11 7V4M7 4h8M16.5 16.5L21 21"/>'
+};
+const EMOJI_ICON = {'💡':'light','🪟':'curtain','📷':'camera','🔘':'switch','🔊':'speaker','🌡️':'thermo','📡':'sensor','🌐':'gateway','⚠️':'gas','🔥':'smoke','🔌':'plug','♨️':'heater','👕':'dryer','🛋️':'lamp','🔔':'bell','🔐':'lock','🪫':'lamp','📦':'box','🌡':'thermo','🤖':'robot','💨':'air','🎨':'lightstrip','💧':'humidifier','🌸':'aroma','👁️':'eye'};
+const FALLBACK_ROOMS = [
+  {key:'living',name:'客厅',icon:'🛋️'},{key:'bedroom',name:'主卧',icon:'🛏️'},{key:'second_bedroom',name:'次卧',icon:'🛌'},
+  {key:'kitchen',name:'厨房',icon:'🍳'},{key:'bathroom',name:'卫生间',icon:'🚿'},{key:'balcony',name:'阳台',icon:'🌿'},
+  {key:'study',name:'书房',icon:'📚'},{key:'entrance',name:'玄关',icon:'🚪'}
+];
+const PRICE_RANGES = [
+  {id:'all',label:'全部',min:0,max:Infinity},
+  {id:'p1',label:'100以下',min:0,max:100},
+  {id:'p2',label:'100-300',min:100,max:300},
+  {id:'p3',label:'300-600',min:300,max:600},
+  {id:'p4',label:'600以上',min:600,max:Infinity}
+];
+
+function svgIcon(name, size){
+  const inner = ICON_SVG[name] || ICON_SVG.box;
+  return `<span class="icon" style="width:${size}px;height:${size}px"><svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${inner}</svg></span>`;
+}
+function productIcon(emoji){
+  const name = EMOJI_ICON[emoji] || 'box';
+  return `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${ICON_SVG[name]}</svg>`;
+}
+
+const API = {
+  token: localStorage.getItem('token'),
+  async req(method, path, body) {
+    const headers = {'Content-Type':'application/json'};
+    if (this.token) headers['Authorization'] = 'Bearer ' + this.token;
+    const res = await fetch(path, {method, headers, body: body?JSON.stringify(body):undefined});
+    const data = await res.json().catch(()=>({}));
+    if (!res.ok) throw new Error(data.error || '请求失败');
+    return data;
+  },
+  login(email,password){ return this.req('POST','/api/login',{email,password}); },
+  register(email,password,nickname){ return this.req('POST','/api/register',{email,password,nickname}); },
+  checkEmail(email){ return this.req('POST','/api/check-email',{email}); },
+  forgotPassword(email){ return this.req('POST','/api/forgot-password',{email}); },
+  products(){ return this.req('GET','/api/products'); },
+  brands(){ return this.req('GET','/api/brands'); },
+  ecos(){ return this.req('GET','/api/ecos'); },
+  rooms(){ return this.req('GET','/api/rooms'); },
+  plans(){ return this.req('GET','/api/plans'); },
+  articles(){ return this.req('GET','/api/articles'); },
+  selections(){ return this.req('GET','/api/selections'); },
+  saveSelections(room_key,items){ return this.req('POST','/api/selections',{room_key,items}); },
+  addRoom(name,icon){ return this.req('POST','/api/rooms',{name,icon}); },
+  updateRoom(key,data){ return this.req('PUT',`/api/rooms/${encodeURIComponent(key)}`,data); },
+  deleteRoom(key){ return this.req('DELETE',`/api/rooms/${encodeURIComponent(key)}`); },
+  userPlans(){ return this.req('GET','/api/user-plans'); },
+  addUserPlan(name,products){ return this.req('POST','/api/user-plans',{name,products}); },
+  updateUserPlan(id,data){ return this.req('PUT',`/api/user-plans/${id}`,data); },
+  deleteUserPlan(id){ return this.req('DELETE',`/api/user-plans/${id}`); },
+  logout(){ localStorage.removeItem('token'); localStorage.removeItem('user'); }
+};
+
+const $ = (s,el=document)=>el.querySelector(s);
+const $$ = (s,el=document)=>el.querySelectorAll(s);
+
+let state = {
+  activeRoom:'living', activeTab:'home',
+  selections:{}, products:[], brands:[], ecos:[], rooms:FALLBACK_ROOMS, plans:[], userPlans:[], articles:[],
+  showSummary:false, showFilter:false, showPlan:null, showMyPlan:null, editingPlan:null, showArticle:null, showPoster:null, editingRooms:false,
+  filters:{ brands:[], ecos:[], price:'all' },
+  user: JSON.parse(localStorage.getItem('user')||'null')
+};
+
+function roomName(key){ const r = state.rooms.find(x=>x.key===key); return r?r.name:key; }
+
+function tagClass(tag){
+  if(tag==='必装') return 'tag must';
+  if(tag==='热卖') return 'tag hot';
+  if(tag==='新品') return 'tag new';
+  if(tag) return 'tag rec';
+  return '';
+}
+function applyFilters(list){
+  return list.filter(p => {
+    if (state.filters.brands.length && !state.filters.brands.includes(p.brand)) return false;
+    if (state.filters.ecos.length && !state.filters.ecos.includes(p.eco)) return false;
+    if (state.filters.price !== 'all') {
+      const r = PRICE_RANGES.find(x=>x.id===state.filters.price);
+      if (r && (p.price < r.min || p.price >= r.max)) return false;
+    }
+    return true;
+  });
+}
+function filterCount(){
+  return state.filters.brands.length + state.filters.ecos.length + (state.filters.price!=='all'?1:0);
+}
+
+function render(){
+  const app = $('#app');
+  if (!API.token || !state.user) { app.innerHTML = renderLogin(); bindLogin(); return; }
+  if (state.activeTab==='home') app.innerHTML = renderHome();
+  else if (state.activeTab==='plans') app.innerHTML = renderPlans();
+  else app.innerHTML = renderArticles();
+  bindTabs();
+  if (state.activeTab==='home') bindHome();
+  else if (state.activeTab==='plans') bindPlansPage();
+  else bindArticlesPage();
+}
+
+function renderLogin(){
+  const remembered = JSON.parse(localStorage.getItem('remember')||'null');
+  return `
+    <div class="login-wrap">
+      <div style="flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:0 16px">
+        <div style="text-align:center;margin-bottom:28px">
+          <div style="width:64px;height:64px;border-radius:18px;background:var(--teal);display:flex;align-items:center;justify-content:center;margin:0 auto 14px;color:#fff">${svgIcon('home',30)}</div>
+          <h1 style="font-size:23px;font-weight:500;color:#fff">全屋智能选品</h1>
+          <p style="color:rgba(255,255,255,.65);font-size:13px;margin-top:4px">登录或注册，开启智能家居方案</p>
+        </div>
+        <div class="login-card" style="width:100%;max-width:350px">
+          <div id="errBox"></div>
+          <form id="authForm" autocomplete="off" data-lpignore="true" data-1p-ignore="true">
+            <div style="margin-bottom:14px">
+              <label class="field-label">邮箱</label>
+              <input class="input" name="email" type="email" inputmode="email" placeholder="请输入邮箱" value="${remembered?.email||''}" autocomplete="off"/>
+            </div>
+            <div style="margin-bottom:14px">
+              <label class="field-label">密码</label>
+              <input class="input" name="password" type="password" placeholder="请输入密码（至少6位）" value="${remembered?.password||''}" autocomplete="off"/>
+            </div>
+            <div class="remember-row">
+              <label class="checkbox"><input type="checkbox" id="rememberMe" checked/> 记住密码</label>
+              <button type="button" class="forgot-link" id="forgotBtn">忘记密码？</button>
+            </div>
+            <button type="submit" class="btn" id="submitBtn">登录</button>
+          </form>
+          <p id="loginTip" style="text-align:center;font-size:12px;color:var(--text3);margin-top:14px">新用户自动注册并登录，老用户直接登录</p>
+        </div>
+      </div>
+    </div>`;
+}
+
+function bindLogin(){
+  const errBox = $('#errBox'), btn = $('#submitBtn'), form = $('#authForm');
+  const emailInput = form['email'], pwdInput = form['password'];
+  let emailExists = false;
+  const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  let timer = null;
+  function updateButton(){
+    const email = emailInput.value.trim();
+    if (!EMAIL_RE.test(email)) { emailExists = false; btn.textContent = '登录'; return; }
+    clearTimeout(timer);
+    timer = setTimeout(async ()=>{
+      try { const {exists} = await API.checkEmail(email); emailExists = exists; btn.textContent = exists ? '登录' : '注册并登录'; }
+      catch(e) { emailExists = false; btn.textContent = '登录'; }
+    }, 300);
+  }
+  emailInput.addEventListener('input', updateButton);
+  if (emailInput.value) updateButton();
+
+  $('#forgotBtn').addEventListener('click',()=>{
+    const o = document.createElement('div'); o.className='modal-overlay';
+    o.innerHTML = `<div class="modal-box"><h3>忘记密码</h3><p style="font-size:13px;color:var(--text2);margin-bottom:14px">输入注册邮箱，重置后密码为 <strong>000000</strong></p><input class="input" id="forgotEmail" type="email" inputmode="email" placeholder="请输入注册邮箱"/><div class="modal-actions"><button class="btn btn-secondary" id="cancelBtn">取消</button><button class="btn" id="confirmBtn">重置密码</button></div></div>`;
+    document.body.appendChild(o);
+    o.querySelector('#cancelBtn').addEventListener('click',()=>o.remove());
+    o.addEventListener('click',e=>{ if(e.target===o) o.remove(); });
+    o.querySelector('#confirmBtn').addEventListener('click', async ()=>{
+      const email = o.querySelector('#forgotEmail').value.trim();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { toast('请输入正确的邮箱'); return; }
+      try {
+        const r = await API.forgotPassword(email);
+        toast(r.message || '密码已重置为 000000');
+        o.remove();
+      } catch(e) { toast(e.message); }
+    });
+  });
+
+  form.addEventListener('submit', async (e)=>{
+    e.preventDefault();
+    errBox.innerHTML='';
+    const email = emailInput.value.trim(), password = pwdInput.value;
+    if (!EMAIL_RE.test(email)) { errBox.innerHTML='<div class="err-msg">请输入正确的邮箱地址</div>'; return; }
+    if (password.length < 6) { errBox.innerHTML='<div class="err-msg">密码至少6位</div>'; return; }
+    btn.disabled = true;
+    try {
+      let exists = emailExists;
+      try { const r = await API.checkEmail(email); exists = r.exists; } catch(_) {}
+      btn.textContent = exists ? '登录中...' : '注册中...';
+      let data;
+      if (exists) data = await API.login(email, password);
+      else { try { data = await API.register(email, password); } catch(err) { if (err.message.includes('已注册')) data = await API.login(email, password); else throw err; } }
+      if ($('#rememberMe').checked) localStorage.setItem('remember', JSON.stringify({email, password}));
+      else localStorage.removeItem('remember');
+      API.token = data.token;
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+      state.user = data.user;
+      await loadData();
+      render();
+    } catch(err) {
+      errBox.innerHTML=`<div class="err-msg">${err.message}</div>`;
+      btn.disabled = false;
+      btn.textContent = emailExists ? '登录' : '注册并登录';
+    }
+  });
+}
+
+async function loadData(){
+  try {
+    const [pd, sel, bd, ed, rd, pl, upl, ar] = await Promise.all([API.products(), API.selections(), API.brands(), API.ecos(), API.rooms(), API.plans(), API.userPlans(), API.articles()]);
+    state.products = pd.products.filter(p => p.status === 'on');
+    state.selections = sel.selections || {};
+    state.brands = bd.brands || [];
+    state.ecos = ed.ecos || [];
+    state.rooms = (rd.rooms && rd.rooms.length) ? rd.rooms : FALLBACK_ROOMS;
+    state.plans = pl.plans || [];
+    state.userPlans = upl.plans || [];
+    state.articles = ar.articles || [];
+    if (!state.rooms.find(r=>r.key===state.activeRoom)) state.activeRoom = state.rooms[0]?.key || 'living';
+  } catch(e) {}
+}
+
+function renderHome(){
+  const roomProducts = applyFilters(state.products.filter(p => p.room === state.activeRoom));
+  const roomItems = state.selections[state.activeRoom] || {};
+  const nickname = state.user?.nickname || state.user?.email;
+  let totalItems=0, totalPrice=0, filledRooms=0, detail=[];
+  state.rooms.forEach(r=>{
+    const items = state.selections[r.key] || {};
+    const ids = Object.keys(items);
+    if(ids.length){
+      filledRooms++;
+      ids.forEach(pid=>{
+        const p = state.products.find(x=>x.id===pid);
+        if(p){ const cnt = items[pid]||1; totalItems+=cnt; totalPrice+=p.price*cnt; detail.push({...p, count:cnt, roomKey:r.key, roomName:r.name}); }
+      });
+    }
+  });
+
+  let roomTabs = state.rooms.map(r=>{
+    const count = Object.values(state.selections[r.key]||{}).reduce((s,c)=>s+c,0);
+    const active = r.key===state.activeRoom?' active':'';
+    const editingCls = state.editingRooms?' editing':'';
+    const delBtn = state.editingRooms?`<span class="room-del" data-del="${r.key}">×</span>`:'';
+    return `<div class="room-tab${active}${editingCls}" data-room="${r.key}"><span class="rt-icon">${r.icon||'🏠'}</span><span>${r.name}</span>${count>0?`<span class="badge">${count}</span>`:''}${delBtn}</div>`;
+  }).join('');
+  roomTabs += `<button class="room-add" id="roomAddBtn" type="button">+</button>`;
+  roomTabs += `<button class="room-edit-btn ${state.editingRooms?'active':''}" id="roomEditBtn" type="button">${state.editingRooms?'✓':'✎'}</button>`;
+
+  let productCards = roomProducts.map(p=>{
+    const count = roomItems[p.id] || 0;
+    const checked = count > 0;
+    const control = checked
+      ? `<div class="stepper"><button data-step="-1" data-pid="${p.id}">−</button><span class="cnt">${count}</span><button data-step="1" data-pid="${p.id}">＋</button></div>`
+      : `<span class="p-check"></span>`;
+    return `<div class="product-card${checked?' selected':''}" data-pid="${p.id}">
+      ${p.tag?`<span class="${tagClass(p.tag)}">${p.tag}</span>`:''}
+      <div class="p-icon">${productIcon(p.icon)}</div>
+      <div class="p-name">${p.name}</div>
+      <div class="p-brand">${p.brand} · ${p.eco||''}</div>
+      <div class="p-desc">${p.desc}</div>
+      <div class="p-bottom"><span class="p-price">¥${p.price}</span>${control}</div>
+    </div>`;
+  }).join('');
+
+  const filterActive = filterCount() > 0;
+  let filterHTML = '';
+  if (state.showFilter) {
+    const brandChips = state.brands.map(b=>`<span class="chip ${state.filters.brands.includes(b)?'active':''}" data-brand="${b}">${b}</span>`).join('');
+    const ecoChips = state.ecos.map(b=>`<span class="chip ${state.filters.ecos.includes(b)?'active':''}" data-eco="${b}">${b}</span>`).join('');
+    const priceChips = PRICE_RANGES.map(r=>`<span class="chip ${state.filters.price===r.id?'active':''}" data-price="${r.id}">${r.label}</span>`).join('');
+    filterHTML = `
+      <div class="modal-overlay2" id="filterOverlay">
+        <div class="modal-sheet" id="filterSheet">
+          <div class="modal-handle"></div>
+          <div style="padding:14px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #F3F4F6">
+            <h3 style="font-size:16px;font-weight:500">筛选</h3>
+            <div style="display:flex;gap:10px;align-items:center">
+              <button id="clearFilter" style="background:none;border:none;color:var(--text2);font-size:13px;cursor:pointer">清除</button>
+              <button id="closeFilter" style="background:none;border:none;font-size:24px;color:var(--text3);cursor:pointer;line-height:1">&times;</button>
+            </div>
+          </div>
+          <div class="filter-panel" style="padding-top:16px">
+            <div class="fp-section"><div class="fp-title">生态</div><div class="chips">${ecoChips}</div></div>
+            <div class="fp-section"><div class="fp-title">品牌</div><div class="chips">${brandChips}</div></div>
+            <div class="fp-section"><div class="fp-title">价格区间</div><div class="chips">${priceChips}</div></div>
+            <button class="btn" id="applyFilter">查看 ${roomProducts.length} 款商品</button>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  let summaryHTML = '';
+  if(state.showSummary){
+    let sections = state.rooms.map(r=>{
+      const items=detail.filter(d=>d.roomKey===r.key);
+      if(!items.length) return '';
+      const roomTotal=items.reduce((s,i)=>s+i.price*i.count,0);
+      const itemHTML=items.map(i=>`<div class="summary-item"><span class="s-icon">${productIcon(i.icon)}</span><div class="s-info"><div class="s-name">${i.name} × ${i.count}</div><div class="s-desc">${i.brand} · 京东自营</div></div><span class="s-price">¥${i.price*i.count}</span></div>`).join('');
+      return `<div class="room-section"><div class="room-section-title"><span class="rs-name">${r.icon||''} ${r.name}</span><span class="rs-count">${items.length}种 · ¥${roomTotal}</span></div>${itemHTML}</div>`;
+    }).join('');
+    if(!detail.length) sections='<div style="text-align:center;padding:48px 0"><div style="font-size:40px;margin-bottom:12px">🛒</div><p style="color:var(--text3)">还没选品，快去挑选吧</p></div>';
+    summaryHTML=`<div class="modal-overlay2" id="modalOverlay"><div class="modal-sheet" id="modalSheet"><div class="modal-handle"></div><div style="padding:14px 16px 12px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #F3F4F6"><h3 style="font-size:17px;font-weight:500">选品清单</h3><button id="closeModal" style="background:none;border:none;font-size:24px;color:var(--text3);cursor:pointer;line-height:1">&times;</button></div><div style="padding:16px">${sections}</div>${detail.length?`<div style="position:sticky;bottom:0;background:#fff;border-top:1px solid #F3F4F6;padding:16px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><span style="font-size:14px;color:var(--text2)">合计 ${totalItems} 件</span><span style="font-size:22px;font-weight:500;color:var(--price)">¥${totalPrice.toLocaleString()}</span></div><button class="btn" id="saveBtn">保存为我的方案</button></div>`:''}</div></div>`;
+  }
+
+  return `
+    <div style="min-height:100vh;display:flex;flex-direction:column;background:transparent;padding-bottom:170px">
+      <div class="header">
+        <div style="padding:12px 16px;display:flex;align-items:center;justify-content:space-between">
+          <div style="display:flex;align-items:center;gap:9px">
+            <span style="width:34px;height:34px;border-radius:10px;background:var(--teal);display:flex;align-items:center;justify-content:center;color:#fff">${svgIcon('home',18)}</span>
+            <div>
+              <div style="font-size:16px;font-weight:500;color:#1f2937">全屋智能选品</div>
+              <div style="font-size:12px;color:var(--text3)">${nickname} · 已选 ${filledRooms}/${state.rooms.length} 个空间</div>
+            </div>
+          </div>
+          <button id="logoutBtn" style="font-size:12px;color:var(--text2);padding:7px 13px;border-radius:9px;border:1px solid var(--border);background:#fff;cursor:pointer">退出</button>
+        </div>
+        <div class="room-scroll">${roomTabs}</div>
+      </div>
+      <div class="filter-bar">
+        <h2 style="font-size:17px;font-weight:500;color:#fff">${roomName(state.activeRoom)}</h2>
+        <button class="filter-btn ${filterActive?'active':''}" id="openFilter">${svgIcon('filter',15)} 筛选 ${filterActive?`<span class="filter-count">${filterCount()}</span>`:''}</button>
+      </div>
+      <div class="product-grid">${productCards || '<div class="loading">没有符合条件的商品</div>'}</div>
+      <div class="bottom-bar">
+        <div class="summary-strip">
+          <div><span style="font-size:14px;color:var(--text2)">已选 </span><span style="font-size:18px;font-weight:500;color:#1f2937">${totalItems}</span><span style="font-size:14px;color:var(--text2)"> 件 · ${filledRooms} 个空间</span></div>
+          <span style="font-size:20px;font-weight:500;color:var(--price)">¥${totalPrice.toLocaleString()}</span>
+        </div>
+        <button class="btn" id="viewSummaryBtn" ${totalItems===0?'disabled':''}>查看选品清单</button>
+      </div>
+      <div class="tab-bar">
+        <button class="tab-item ${state.activeTab==='home'?'active':''}" data-tab="home"><span class="ti">${svgIcon('home',20)}</span>首页</button>
+        <button class="tab-item ${state.activeTab==='plans'?'active':''}" data-tab="plans"><span class="ti">${svgIcon('plan',20)}</span>方案</button>
+        <button class="tab-item ${state.activeTab==='science'?'active':''}" data-tab="science"><span class="ti">${svgIcon('science',20)}</span>科普</button>
+      </div>
+      ${filterHTML}${summaryHTML}
+    </div>`;
+}
+
+function renderPlans(){
+  const plans = state.plans.map(p=>{
+    const total = p.products.reduce((s,x)=>s+x.price,0);
+    return `<div class="plan-card" data-plan="${p.id}">
+      <div class="pc-top"><div class="pc-icon">${p.icon||'📋'}</div><div class="pc-name">${p.name}</div></div>
+      <div class="pc-desc">${p.desc||''}</div>
+      <div class="pc-meta"><span class="pc-count">${p.products.length} 件产品</span><span class="pc-price">¥${total.toLocaleString()}</span></div>
+    </div>`;
+  }).join('') || '<div class="loading">暂无方案</div>';
+
+  const myPlans = state.userPlans.map(p=>{
+    const total = p.products.reduce((s,x)=>s+x.price,0);
+    return `<div class="plan-card" data-myplan="${p.id}">
+      <div class="pc-top"><div class="pc-icon">${p.icon||'📋'}</div><div class="pc-name">${p.name}</div></div>
+      <div class="pc-desc">我的方案 · ${p.products.length} 件产品</div>
+      <div class="pc-meta"><span class="pc-count">${(p.createdAt||'').slice(0,10)}</span><span class="pc-price">¥${total.toLocaleString()}</span></div>
+      <div class="pc-actions">
+        <button class="mini-btn primary" data-act="rename" data-id="${p.id}">改名</button>
+        <button class="mini-btn primary" data-act="edit" data-id="${p.id}">编辑内容</button>
+        <button class="mini-btn danger" data-act="delete" data-id="${p.id}">删除</button>
+      </div>
+    </div>`;
+  }).join('') || '<div class="empty" style="padding:24px">还没有保存的方案，去首页选品后点「保存方案」</div>';
+
+  let planDetailHTML = '';
+  if (state.showPlan) {
+    const p = state.plans.find(x=>x.id===state.showPlan);
+    if (p) {
+      const total = p.products.reduce((s,x)=>s+x.price,0);
+      const items = p.products.map(i=>`<div class="summary-item"><span class="s-icon">${productIcon(i.icon)}</span><div class="s-info"><div class="s-name">${i.name}</div><div class="s-desc">${i.brand} · ${roomName(i.room)} · 京东自营</div></div><span class="s-price">¥${i.price}</span></div>`).join('');
+      planDetailHTML = `<div class="modal-overlay2" id="planOverlay"><div class="modal-sheet" id="planSheet">
+        <div class="modal-handle"></div>
+        <div style="padding:14px 16px 12px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #F3F4F6">
+          <h3 style="font-size:17px;font-weight:500">${p.icon||'📋'} ${p.name}</h3>
+          <button id="closePlan" style="background:none;border:none;font-size:24px;color:var(--text3);cursor:pointer;line-height:1">&times;</button>
+        </div>
+        <div style="padding:16px"><p style="font-size:13px;color:var(--text2);margin-bottom:14px">${p.desc||''}</p>${items}</div>
+        <div style="position:sticky;bottom:0;background:#fff;border-top:1px solid #F3F4F6;padding:16px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><span style="font-size:14px;color:var(--text2)">共 ${p.products.length} 件</span><span style="font-size:22px;font-weight:500;color:var(--price)">¥${total.toLocaleString()}</span></div>
+          <div style="display:flex;gap:10px"><button class="btn" id="sharePlanBtn" style="background:#fff;color:var(--teal);border:1px solid var(--teal)">分享海报</button><button class="btn" id="usePlanBtn">采用此方案</button></div>
+        </div>
+      </div></div>`;
+    }
+  }
+
+  let myPlanDetailHTML = '';
+  if (state.showMyPlan) {
+    const p = state.userPlans.find(x=>x.id===state.showMyPlan);
+    if (p) {
+      const total = p.products.reduce((s,x)=>s+x.price,0);
+      const items = p.products.map(i=>`<div class="summary-item"><span class="s-icon">${productIcon(i.icon)}</span><div class="s-info"><div class="s-name">${i.name}</div><div class="s-desc">${i.brand} · ${roomName(i.room)} · 京东自营</div></div><span class="s-price">¥${i.price}</span></div>`).join('') || '<div class="empty">该方案暂无商品，点编辑添加</div>';
+      myPlanDetailHTML = `<div class="modal-overlay2" id="myPlanOverlay"><div class="modal-sheet" id="myPlanSheet">
+        <div class="modal-handle"></div>
+        <div style="padding:14px 16px 12px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #F3F4F6">
+          <h3 style="font-size:17px;font-weight:500">${p.icon||'📋'} ${p.name}</h3>
+          <button id="closeMyPlan" style="background:none;border:none;font-size:24px;color:var(--text3);cursor:pointer;line-height:1">&times;</button>
+        </div>
+        <div style="padding:16px">${items}</div>
+        <div style="position:sticky;bottom:0;background:#fff;border-top:1px solid #F3F4F6;padding:16px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><span style="font-size:14px;color:var(--text2)">共 ${p.products.length} 件</span><span style="font-size:22px;font-weight:500;color:var(--price)">¥${total.toLocaleString()}</span></div>
+          <div style="display:flex;gap:10px"><button class="btn" id="shareMyPlanBtn" style="background:#fff;color:var(--teal);border:1px solid var(--teal)">分享海报</button><button class="btn" id="useMyPlanBtn">采用此方案</button></div>
+        </div>
+      </div></div>`;
+    }
+  }
+
+  let editHTML = '';
+  if (state.editingPlan) {
+    const p = state.userPlans.find(x=>x.id===state.editingPlan);
+    if (p) {
+      const selectedIds = p.products.map(x=>x.id);
+      let pickHTML='';
+      state.rooms.forEach(room=>{
+        const items = state.products.filter(x=>x.room===room.key);
+        if(!items.length) return;
+        const itemHTML = items.map(x=>`<label class="pick-item"><input type="checkbox" data-pid="${x.id}" ${selectedIds.includes(x.id)?'checked':''}/><span class="pi-name">${x.name}</span><span class="pi-price">¥${x.price}</span></label>`).join('');
+        pickHTML += `<div class="pick-group"><div class="pick-room">${room.icon||''} ${room.name}</div>${itemHTML}</div>`;
+      });
+      editHTML = `<div class="modal-overlay2" id="editOverlay"><div class="modal-sheet" id="editSheet">
+        <div class="modal-handle"></div>
+        <div style="padding:14px 16px 12px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #F3F4F6">
+          <h3 style="font-size:17px;font-weight:500">编辑方案内容</h3>
+          <button id="closeEdit" style="background:none;border:none;font-size:24px;color:var(--text3);cursor:pointer;line-height:1">&times;</button>
+        </div>
+        <div style="padding:16px"><p style="font-size:13px;color:var(--text2);margin-bottom:12px">${p.name} · 勾选要保留的商品</p><div class="product-pick">${pickHTML}</div><button class="btn" id="saveEditBtn" style="margin-top:16px">保存修改</button></div>
+      </div></div>`;
+    }
+  }
+
+  let posterHTML = '';
+  if (state.showPoster) {
+    posterHTML = `<div class="modal-overlay" id="posterOverlay"><div style="background:#fff;border-radius:16px;padding:16px;max-width:340px;width:100%">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px"><h3 style="font-size:16px;font-weight:500">分享海报</h3><button id="closePoster" style="background:none;border:none;font-size:22px;color:var(--text3);cursor:pointer">&times;</button></div>
+      <div class="poster-preview" id="posterCanvas"></div>
+      <div style="display:flex;gap:10px;margin-top:14px"><button class="btn" id="downloadPoster">保存图片</button></div>
+    </div></div>`;
+  }
+
+  return `
+    <div style="min-height:100vh;background:transparent;padding-bottom:90px">
+      <div class="header"><div style="padding:14px 16px;display:flex;align-items:center;justify-content:space-between">
+        <span style="font-size:17px;font-weight:500;color:#1f2937">选品方案</span>
+        <button id="logoutBtn2" style="font-size:12px;color:var(--text2);padding:7px 13px;border-radius:9px;border:1px solid var(--border);background:#fff;cursor:pointer">退出</button>
+      </div></div>
+      <div class="plans-wrap">
+        <div class="plans-head">官方精选方案</div>
+        ${plans}
+        <div class="plans-head" style="margin-top:24px">我已保存的方案</div>
+        ${myPlans}
+      </div>
+      <div class="tab-bar">
+        <button class="tab-item ${state.activeTab==='home'?'active':''}" data-tab="home"><span class="ti">${svgIcon('home',20)}</span>首页</button>
+        <button class="tab-item ${state.activeTab==='plans'?'active':''}" data-tab="plans"><span class="ti">${svgIcon('plan',20)}</span>方案</button>
+        <button class="tab-item ${state.activeTab==='science'?'active':''}" data-tab="science"><span class="ti">${svgIcon('science',20)}</span>科普</button>
+      </div>
+      ${planDetailHTML}${myPlanDetailHTML}${editHTML}${posterHTML}
+    </div>`;
+}
+
+function renderArticles(){
+  const list = state.articles.map(a=>{
+    return `<div class="article-card" data-article="${a.id}">
+      <div class="a-top"><div class="a-cover">${a.cover||'📄'}</div><div class="a-title">${a.title}</div></div>
+      <div class="a-summary">${a.summary||''}</div>
+      <div class="a-date">${(a.createdAt||'').slice(0,10)}</div>
+    </div>`;
+  }).join('') || '<div class="loading">暂无内容</div>';
+
+  let detailHTML = '';
+  if (state.showArticle) {
+    const a = state.articles.find(x=>x.id===state.showArticle);
+    if (a) {
+      const paras = (a.content||'').split('\n').filter(p=>p.trim()).map(p=>`<p>${p}</p>`).join('');
+      detailHTML = `<div class="modal-overlay2" id="articleOverlay"><div class="modal-sheet" id="articleSheet">
+        <div class="modal-handle"></div>
+        <div style="padding:12px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #F3F4F6">
+          <button id="closeArticle" style="background:none;border:none;font-size:24px;color:var(--text3);cursor:pointer;line-height:1">&times;</button>
+        </div>
+        <div class="article-detail">
+          <h1>${a.cover||''} ${a.title}</h1>
+          <div class="a-meta">${(a.createdAt||'').slice(0,10)}</div>
+          <div class="a-content">${paras}</div>
+        </div>
+      </div></div>`;
+    }
+  }
+
+  return `
+    <div style="min-height:100vh;background:transparent;padding-bottom:90px">
+      <div class="header"><div style="padding:14px 16px;display:flex;align-items:center;justify-content:space-between">
+        <span style="font-size:17px;font-weight:500;color:#1f2937">智能科普</span>
+        <button id="logoutBtn3" style="font-size:12px;color:var(--text2);padding:7px 13px;border-radius:9px;border:1px solid var(--border);background:#fff;cursor:pointer">退出</button>
+      </div></div>
+      <div class="plans-wrap">
+        <div class="plans-head">智能家居知识</div>
+        ${list}
+      </div>
+      <div class="tab-bar">
+        <button class="tab-item ${state.activeTab==='home'?'active':''}" data-tab="home"><span class="ti">${svgIcon('home',20)}</span>首页</button>
+        <button class="tab-item ${state.activeTab==='plans'?'active':''}" data-tab="plans"><span class="ti">${svgIcon('plan',20)}</span>方案</button>
+        <button class="tab-item ${state.activeTab==='science'?'active':''}" data-tab="science"><span class="ti">${svgIcon('science',20)}</span>科普</button>
+      </div>
+      ${detailHTML}
+    </div>`;
+}
+
+function bindTabs(){
+  $$('.tab-item').forEach(t=>t.addEventListener('click',()=>{
+    state.activeTab = t.dataset.tab;
+    state.showFilter = false; state.showSummary = false; state.showPlan = null; state.showMyPlan = null; state.showArticle = null; state.editingPlan = null; state.showPoster = null;
+    render();
+  }));
+}
+
+function setCount(pid, delta){
+  const room = state.activeRoom;
+  const items = state.selections[room] || {};
+  const cur = items[pid] || 0;
+  const next = Math.max(0, cur + delta);
+  const newItems = {...items};
+  if (next === 0) delete newItems[pid];
+  else newItems[pid] = next;
+  state.selections = {...state.selections, [room]: newItems};
+  API.saveSelections(room, newItems).catch(()=>{});
+}
+
+function bindHome(){
+  $$('.room-tab[data-room]').forEach(tab=>tab.addEventListener('click',()=>{
+    const key = tab.dataset.room;
+    if (state.editingRooms) {
+      const room = state.rooms.find(r=>r.key===key);
+      if (room) showRoomModal(room, false);
+    } else {
+      state.activeRoom = key; state.showSummary = false; render();
+    }
+  }));
+  $$('.room-del').forEach(el=>el.addEventListener('click', async (e)=>{
+    e.stopPropagation();
+    const key = el.dataset.del;
+    const room = state.rooms.find(r=>r.key===key);
+    if (!confirm(`确定删除房间「${room.name}」？`)) return;
+    try { await API.deleteRoom(key); toast('已删除'); await loadData(); render(); } catch(err){ toast(err.message); }
+  }));
+  const roomAddBtn = $('#roomAddBtn');
+  if (roomAddBtn) roomAddBtn.addEventListener('click',()=>showRoomModal(null, true));
+  const roomEditBtn = $('#roomEditBtn');
+  if (roomEditBtn) roomEditBtn.addEventListener('click',()=>{ state.editingRooms = !state.editingRooms; render(); });
+  $$('.product-card').forEach(card=>card.addEventListener('click', async (e)=>{
+    const pid = card.dataset.pid;
+    const stepBtn = e.target.closest('[data-step]');
+    if (stepBtn) {
+      setCount(pid, Number(stepBtn.dataset.step));
+    } else {
+      const items = state.selections[state.activeRoom] || {};
+      if (items[pid]) setCount(pid, -items[pid]);
+      else setCount(pid, 1);
+    }
+    render();
+  }));
+  const viewBtn=$('#viewSummaryBtn'); if(viewBtn) viewBtn.addEventListener('click',()=>{ state.showSummary=true; render(); });
+  const overlay=$('#modalOverlay'), closeBtn=$('#closeModal');
+  if(overlay) overlay.addEventListener('click',e=>{ if(e.target===overlay){ state.showSummary=false; render(); } });
+  if(closeBtn) closeBtn.addEventListener('click',()=>{ state.showSummary=false; render(); });
+  const saveBtn=$('#saveBtn'); if(saveBtn) saveBtn.addEventListener('click', ()=>{
+    const ids = [];
+    Object.values(state.selections).forEach(items => Object.keys(items).forEach(id => { if(!ids.includes(id)) ids.push(id); }));
+    if (ids.length === 0) { toast('请先在首页选品'); return; }
+    showNamePrompt('保存为我的方案', '我的方案', async (name)=>{
+      try {
+        await API.addUserPlan(name, ids);
+        toast('✅ 已保存为我的方案');
+        state.showSummary = false;
+        state.activeTab = 'plans';
+        await loadData();
+        render();
+      } catch(err){ toast(err.message); }
+    });
+  });
+
+  const logoutBtn=$('#logoutBtn'); if(logoutBtn) logoutBtn.addEventListener('click',()=>{ API.logout(); state.user=null; state.selections={}; render(); });
+
+  const openFilter=$('#openFilter');
+  if(openFilter) openFilter.addEventListener('click',()=>{ state.showFilter=true; render(); });
+
+  const filterOverlay=$('#filterOverlay');
+  if(filterOverlay){
+    filterOverlay.addEventListener('click',e=>{ if(e.target===filterOverlay){ state.showFilter=false; render(); } });
+    $('#closeFilter').addEventListener('click',()=>{ state.showFilter=false; render(); });
+    $('#clearFilter').addEventListener('click',()=>{ state.filters={brands:[],ecos:[],price:'all'}; render(); });
+    $$('.chip[data-brand]').forEach(c=>c.addEventListener('click',()=>{ const b=c.dataset.brand; state.filters.brands = state.filters.brands.includes(b)?state.filters.brands.filter(x=>x!==b):[...state.filters.brands,b]; render(); }));
+    $$('.chip[data-eco]').forEach(c=>c.addEventListener('click',()=>{ const b=c.dataset.eco; state.filters.ecos = state.filters.ecos.includes(b)?state.filters.ecos.filter(x=>x!==b):[...state.filters.ecos,b]; render(); }));
+    $$('.chip[data-price]').forEach(c=>c.addEventListener('click',()=>{ state.filters.price=c.dataset.price; render(); }));
+    $('#applyFilter').addEventListener('click',()=>{ state.showFilter=false; render(); });
+  }
+}
+
+function bindPlansPage(){
+  $$('.plan-card[data-plan]').forEach(c=>c.addEventListener('click',()=>{ state.showPlan=c.dataset.plan; render(); }));
+  $$('.plan-card[data-myplan]').forEach(c=>c.addEventListener('click',()=>{ state.showMyPlan=c.dataset.myplan; render(); }));
+
+  $$('.plan-card [data-act]').forEach(btn=>btn.addEventListener('click', async (e)=>{
+    e.stopPropagation();
+    const id = btn.dataset.id, act = btn.dataset.act;
+    const p = state.userPlans.find(x=>x.id===id);
+    if (act === 'rename') {
+      showNamePrompt('修改方案名称', p?.name||'', async (name)=>{
+        try { await API.updateUserPlan(id, {name}); toast('已改名'); await loadData(); render(); } catch(err){ toast(err.message); }
+      });
+    } else if (act === 'edit') { state.editingPlan = id; render(); }
+    else if (act === 'delete') { if (!confirm(`确定删除方案「${p?.name}」？`)) return; try { await API.deleteUserPlan(id); toast('已删除'); await loadData(); render(); } catch(err){ toast(err.message); } }
+  }));
+
+  const po=$('#planOverlay');
+  if(po){
+    po.addEventListener('click',e=>{ if(e.target===po){ state.showPlan=null; render(); } });
+    $('#closePlan').addEventListener('click',()=>{ state.showPlan=null; render(); });
+    $('#usePlanBtn').addEventListener('click',()=>{ const p=state.plans.find(x=>x.id===state.showPlan); if(p) adoptPlan(p.products); });
+    $('#sharePlanBtn').addEventListener('click',()=>{ const p=state.plans.find(x=>x.id===state.showPlan); if(p) showPoster(p); });
+  }
+
+  const mpo=$('#myPlanOverlay');
+  if(mpo){
+    mpo.addEventListener('click',e=>{ if(e.target===mpo){ state.showMyPlan=null; render(); } });
+    $('#closeMyPlan').addEventListener('click',()=>{ state.showMyPlan=null; render(); });
+    $('#useMyPlanBtn').addEventListener('click',()=>{ const p=state.userPlans.find(x=>x.id===state.showMyPlan); if(p) adoptPlan(p.products); });
+    $('#shareMyPlanBtn').addEventListener('click',()=>{ const p=state.userPlans.find(x=>x.id===state.showMyPlan); if(p) showPoster(p); });
+  }
+
+  const eo=$('#editOverlay');
+  if(eo){
+    eo.addEventListener('click',e=>{ if(e.target===eo){ state.editingPlan=null; render(); } });
+    $('#closeEdit').addEventListener('click',()=>{ state.editingPlan=null; render(); });
+    $('#saveEditBtn').addEventListener('click', async ()=>{
+      const id = state.editingPlan;
+      const ids = [...eo.querySelectorAll('[data-pid]:checked')].map(c=>c.dataset.pid);
+      try { await API.updateUserPlan(id, {products: ids}); toast('内容已更新'); state.editingPlan=null; await loadData(); render(); } catch(err){ toast(err.message); }
+    });
+  }
+
+  const po2=$('#posterOverlay');
+  if(po2){
+    po2.addEventListener('click',e=>{ if(e.target===po2){ state.showPoster=null; render(); } });
+    $('#closePoster').addEventListener('click',()=>{ state.showPoster=null; render(); });
+    $('#downloadPoster').addEventListener('click', downloadPoster);
+  }
+
+  const lb=$('#logoutBtn2'); if(lb) lb.addEventListener('click',()=>{ API.logout(); state.user=null; state.selections={}; render(); });
+}
+
+function bindArticlesPage(){
+  $$('.article-card').forEach(c=>c.addEventListener('click',()=>{ state.showArticle=c.dataset.article; render(); }));
+  const o=$('#articleOverlay');
+  if(o){
+    o.addEventListener('click',e=>{ if(e.target===o){ state.showArticle=null; render(); } });
+    $('#closeArticle').addEventListener('click',()=>{ state.showArticle=null; render(); });
+  }
+  const lb=$('#logoutBtn3'); if(lb) lb.addEventListener('click',()=>{ API.logout(); state.user=null; state.selections={}; render(); });
+}
+
+async function adoptPlan(products){
+  const grouped = {};
+  products.forEach(prod => { (grouped[prod.room]=grouped[prod.room]||{})[prod.id] = 1; });
+  for (const [room, items] of Object.entries(grouped)) {
+    state.selections[room] = items;
+    try { await API.saveSelections(room, items); } catch(e){}
+  }
+  alert('✅ 已采用该方案，可在首页查看');
+  state.showPlan = null; state.showMyPlan = null; state.activeTab = 'home';
+  render();
+}
+
+// ===== 分享海报 =====
+let posterDataURL = null;
+function showPoster(plan){
+  state.showPoster = plan.id;
+  render();
+  // render 后绘制海报
+  setTimeout(()=> drawPoster(plan), 50);
+}
+function drawPoster(plan){
+  const container = $('#posterCanvas');
+  if (!container) return;
+  const canvas = document.createElement('canvas');
+  const W = 750, H = 1000;
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext('2d');
+  // 背景
+  ctx.fillStyle = '#0F6E56';
+  ctx.fillRect(0, 0, W, 200);
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fillRect(0, 200, W, H-200);
+  // 标题
+  ctx.fillStyle = '#FFFFFF';
+  ctx.font = 'bold 48px sans-serif';
+  ctx.fillText('全屋智能选品', 40, 90);
+  ctx.font = '28px sans-serif';
+  ctx.fillText('智能家居方案分享', 40, 135);
+  // 方案名
+  ctx.fillStyle = '#1F2937';
+  ctx.font = 'bold 40px sans-serif';
+  ctx.fillText((plan.icon?plan.icon+' ':'') + plan.name, 40, 260);
+  // 清单
+  ctx.font = '26px sans-serif';
+  let y = 320;
+  const total = plan.products.reduce((s,x)=>s+x.price,0);
+  plan.products.slice(0, 12).forEach(p=>{
+    if (y > 780) return;
+    ctx.fillStyle = '#6B7280';
+    ctx.fillText(`${p.icon||'·'} ${p.name}`, 40, y);
+    ctx.fillStyle = '#E24B4A';
+    const priceText = '¥' + p.price;
+    ctx.textAlign = 'right';
+    ctx.fillText(priceText, W-40, y);
+    ctx.textAlign = 'left';
+    y += 44;
+  });
+  if (plan.products.length > 12) { ctx.fillStyle = '#9CA3AF'; ctx.fillText('...等共 ' + plan.products.length + ' 件', 40, y); y += 44; }
+  // 底部总价
+  ctx.fillStyle = '#1F2937';
+  ctx.font = 'bold 32px sans-serif';
+  ctx.fillText('合计 ' + plan.products.length + ' 件', 40, H-60);
+  ctx.fillStyle = '#E24B4A';
+  ctx.font = 'bold 44px sans-serif';
+  ctx.textAlign = 'right';
+  ctx.fillText('¥' + total.toLocaleString(), W-40, H-60);
+  ctx.textAlign = 'left';
+  posterDataURL = canvas.toDataURL('image/png');
+  const img = document.createElement('img');
+  img.src = posterDataURL;
+  img.style.width = '100%';
+  container.innerHTML = '';
+  container.appendChild(img);
+}
+function downloadPoster(){
+  if (!posterDataURL) return;
+  const a = document.createElement('a');
+  a.href = posterDataURL;
+  a.download = '方案海报.png';
+  a.click();
+}
+
+function showNamePrompt(title, defaultValue, onConfirm){
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `<div class="modal-box">
+    <h3>${title}</h3>
+    <input class="input" id="nameInput" value="${defaultValue||''}" placeholder="请输入方案名称" maxlength="30"/>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="cancelBtn">取消</button>
+      <button class="btn" id="confirmBtn">确定</button>
+    </div>
+  </div>`;
+  document.body.appendChild(overlay);
+  overlay.querySelector('#cancelBtn').addEventListener('click',()=>overlay.remove());
+  overlay.addEventListener('click',e=>{ if(e.target===overlay) overlay.remove(); });
+  const confirm = () => {
+    const val = overlay.querySelector('#nameInput').value.trim();
+    if (!val) { toast('请输入方案名称'); return; }
+    overlay.remove();
+    onConfirm(val);
+  };
+  overlay.querySelector('#confirmBtn').addEventListener('click', confirm);
+  overlay.querySelector('#nameInput').addEventListener('keyup', e=>{ if(e.key==='Enter') confirm(); });
+  overlay.querySelector('#nameInput').focus();
+}
+
+function showRoomModal(room, isNew){
+  const name = room?.name || '';
+  const icon = room?.icon || '🏠';
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `<div class="modal-box">
+    <h3>${isNew?'新增房间':'编辑房间'}</h3>
+    <div class="form-row"><label>房间名称</label><input class="input" id="f_name" value="${name}" placeholder="如：衣帽间" maxlength="10"/></div>
+    <div class="form-row"><label>图标（emoji）</label><input class="input" id="f_icon" value="${icon}" placeholder="如：👗"/></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="cancelBtn">取消</button>
+      <button class="btn" id="confirmBtn">${isNew?'新增':'保存'}</button>
+    </div>
+    ${isNew?'':`<div style="margin-top:14px;text-align:center"><button id="deleteBtn" style="background:none;border:1px solid #fecaca;color:#B91C1C;border-radius:8px;padding:8px 20px;font-size:13px;cursor:pointer">删除此房间</button></div>`}
+  </div>`;
+  document.body.appendChild(overlay);
+  overlay.querySelector('#cancelBtn').addEventListener('click',()=>overlay.remove());
+  overlay.addEventListener('click',e=>{ if(e.target===overlay) overlay.remove(); });
+  overlay.querySelector('#confirmBtn').addEventListener('click', async ()=>{
+    const n = overlay.querySelector('#f_name').value.trim();
+    if (!n) { toast('房间名不能为空'); return; }
+    const i = overlay.querySelector('#f_icon').value.trim() || '🏠';
+    try {
+      if (isNew) await API.addRoom(n, i);
+      else await API.updateRoom(room.key, {name:n, icon:i});
+      toast(isNew?'已新增':'已保存');
+      overlay.remove();
+      await loadData(); render();
+    } catch(e){ toast(e.message); }
+  });
+  if (!isNew) {
+    overlay.querySelector('#deleteBtn').addEventListener('click', async ()=>{
+      if (!confirm(`确定删除房间「${room.name}」？`)) return;
+      try { await API.deleteRoom(room.key); toast('已删除'); overlay.remove(); await loadData(); render(); } catch(e){ toast(e.message); }
+    });
+  }
+}
+
+function toast(msg){
+  const t = document.createElement('div');
+  t.textContent = msg;
+  Object.assign(t.style, {position:'fixed', top:'20px', left:'50%', transform:'translateX(-50%)', background:'#1F2937', color:'#fff', padding:'10px 20px', borderRadius:'10px', fontSize:'14px', zIndex:'999'});
+  document.body.appendChild(t);
+  setTimeout(()=>{ t.style.opacity='0'; setTimeout(()=>t.remove(),300); }, 2000);
+}
+
+(async function(){ if(API.token && state.user){ await loadData(); } render(); })();
+</script>
+<script>
+/* Balatro 旋转着色器背景（等价复刻 @react-bits/Balatro-JS-CSS，原生 WebGL 实现） */
+(function(){
+  var canvas = document.getElementById('balatro-bg');
+  if(!canvas) return;
+  var gl = canvas.getContext('webgl', {antialias:false}) || canvas.getContext('experimental-webgl');
+  if(!gl) return;
+
+  var VERT = [
+    'attribute vec2 position;',
+    'attribute vec2 uv;',
+    'varying vec2 vUv;',
+    'void main(){ vUv=uv; gl_Position=vec4(position,0.0,1.0); }'
+  ].join('\n');
+
+  var FRAG = [
+    'precision highp float;',
+    '#define PI 3.14159265359',
+    'uniform float iTime;',
+    'uniform vec3 iResolution;',
+    'uniform float uSpinRotation;',
+    'uniform float uSpinSpeed;',
+    'uniform vec2 uOffset;',
+    'uniform vec4 uColor1;',
+    'uniform vec4 uColor2;',
+    'uniform vec4 uColor3;',
+    'uniform float uContrast;',
+    'uniform float uLighting;',
+    'uniform float uSpinAmount;',
+    'uniform float uPixelFilter;',
+    'uniform float uSpinEase;',
+    'uniform bool uIsRotate;',
+    'uniform vec2 uMouse;',
+    'varying vec2 vUv;',
+    'vec4 effect(vec2 screenSize, vec2 screen_coords){',
+    '  float pixel_size = length(screenSize.xy) / uPixelFilter;',
+    '  vec2 uv = (floor(screen_coords.xy * (1.0/pixel_size)) * pixel_size - 0.5*screenSize.xy) / length(screenSize.xy) - uOffset;',
+    '  float uv_len = length(uv);',
+    '  float speed = (uSpinRotation * uSpinEase * 0.2);',
+    '  if(uIsRotate){ speed = iTime * speed; }',
+    '  speed += 302.2;',
+    '  float mouseInfluence = (uMouse.x * 2.0 - 1.0);',
+    '  speed += mouseInfluence * 0.1;',
+    '  float new_pixel_angle = atan(uv.y, uv.x) + speed - uSpinEase*20.0*(uSpinAmount*uv_len + (1.0-uSpinAmount));',
+    '  vec2 mid = (screenSize.xy / length(screenSize.xy)) / 2.0;',
+    '  uv = (vec2(uv_len*cos(new_pixel_angle)+mid.x, uv_len*sin(new_pixel_angle)+mid.y) - mid);',
+    '  uv *= 30.0;',
+    '  float baseSpeed = iTime * uSpinSpeed;',
+    '  speed = baseSpeed + mouseInfluence*2.0;',
+    '  vec2 uv2 = vec2(uv.x + uv.y);',
+    '  for(int i=0;i<5;i++){',
+    '    uv2 += sin(max(uv.x, uv.y)) + uv;',
+    '    uv += 0.5*vec2(cos(5.1123314 + 0.353*uv2.y + speed*0.131121), sin(uv2.x - 0.113*speed));',
+    '    uv -= cos(uv.x+uv.y) - sin(uv.x*0.711 - uv.y);',
+    '  }',
+    '  float contrast_mod = (0.25*uContrast + 0.5*uSpinAmount + 1.2);',
+    '  float paint_res = min(2.0, max(0.0, length(uv)*0.035*contrast_mod));',
+    '  float c1p = max(0.0, 1.0 - contrast_mod*abs(1.0-paint_res));',
+    '  float c2p = max(0.0, 1.0 - contrast_mod*abs(paint_res));',
+    '  float c3p = 1.0 - min(1.0, c1p+c2p);',
+    '  float light = (uLighting-0.2)*max(c1p*5.0-4.0,0.0) + uLighting*max(c2p*5.0-4.0,0.0);',
+    '  return (0.3/uContrast)*uColor1 + (1.0 - 0.3/uContrast)*(uColor1*c1p + uColor2*c2p + vec4(c3p*uColor3.rgb, c3p*uColor1.a)) + light;',
+    '}',
+    'void main(){ vec2 uv = vUv * iResolution.xy; gl_FragColor = effect(iResolution.xy, uv); }'
+  ].join('\n');
+
+  function compile(type, src){
+    var s = gl.createShader(type);
+    gl.shaderSource(s, src);
+    gl.compileShader(s);
+    if(!gl.getShaderParameter(s, gl.COMPILE_STATUS)){ console.error(gl.getShaderInfoLog(s)); return null; }
+    return s;
+  }
+  var vs = compile(gl.VERTEX_SHADER, VERT);
+  var fs = compile(gl.FRAGMENT_SHADER, FRAG);
+  if(!vs || !fs) return;
+  var prog = gl.createProgram();
+  gl.attachShader(prog, vs);
+  gl.attachShader(prog, fs);
+  gl.linkProgram(prog);
+  if(!gl.getProgramParameter(prog, gl.LINK_STATUS)){ console.error(gl.getProgramInfoLog(prog)); return; }
+  gl.useProgram(prog);
+
+  // 全屏四边形（position ∈ [-1,1]，uv ∈ [0,1]）
+  var buf = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+    -1,-1, 0,0,
+     1,-1, 1,0,
+    -1, 1, 0,1,
+    -1, 1, 0,1,
+     1,-1, 1,0,
+     1, 1, 1,1
+  ]), gl.STATIC_DRAW);
+  var posLoc = gl.getAttribLocation(prog, 'position');
+  var uvLoc = gl.getAttribLocation(prog, 'uv');
+  gl.enableVertexAttribArray(posLoc);
+  gl.vertexAttribPointer(posLoc, 2, gl.FLOAT, false, 16, 0);
+  gl.enableVertexAttribArray(uvLoc);
+  gl.vertexAttribPointer(uvLoc, 2, gl.FLOAT, false, 16, 8);
+
+  var U = {};
+  ['iTime','iResolution','uSpinRotation','uSpinSpeed','uOffset','uColor1','uColor2','uColor3','uContrast','uLighting','uSpinAmount','uPixelFilter','uSpinEase','uIsRotate','uMouse'].forEach(function(n){ U[n] = gl.getUniformLocation(prog, n); });
+
+  function hex2vec(h){
+    h = h.replace('#','');
+    return [parseInt(h.slice(0,2),16)/255, parseInt(h.slice(2,4),16)/255, parseInt(h.slice(4,6),16)/255, 1.0];
+  }
+  var c1 = hex2vec('#056042');
+  var c2 = hex2vec('#006BB4');
+  var c3 = hex2vec('#162325');
+
+  function resize(){
+    var dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+    var w = Math.floor(window.innerWidth * dpr);
+    var h = Math.floor(window.innerHeight * dpr);
+    canvas.width = w; canvas.height = h;
+    gl.viewport(0, 0, w, h);
+    gl.uniform3f(U.iResolution, w, h, w / h);
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  var mouse = [0.5, 0.5];
+  document.addEventListener('mousemove', function(e){
+    mouse[0] = e.clientX / window.innerWidth;
+    mouse[1] = 1.0 - e.clientY / window.innerHeight;
+  });
+
+  var start = performance.now();
+  function frame(now){
+    gl.uniform1f(U.iTime, (now - start) / 1000);
+    gl.uniform1f(U.uSpinRotation, 10);
+    gl.uniform1f(U.uSpinSpeed, 10.5);
+    gl.uniform2f(U.uOffset, 0, 0);
+    gl.uniform4f(U.uColor1, c1[0], c1[1], c1[2], c1[3]);
+    gl.uniform4f(U.uColor2, c2[0], c2[1], c2[2], c2[3]);
+    gl.uniform4f(U.uColor3, c3[0], c3[1], c3[2], c3[3]);
+    gl.uniform1f(U.uContrast, 3.5);
+    gl.uniform1f(U.uLighting, 0.4);
+    gl.uniform1f(U.uSpinAmount, 0.25);
+    gl.uniform1f(U.uPixelFilter, 700);
+    gl.uniform1f(U.uSpinEase, 1.0);
+    gl.uniform1i(U.uIsRotate, 0);
+    gl.uniform2f(U.uMouse, mouse[0], mouse[1]);
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

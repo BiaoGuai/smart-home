@@ -1,0 +1,18 @@
+# 依赖
+node_modules/
+
+# 本地数据文件（上线后数据存 Supabase）
+data.json
+
+# 旧的本地开发/废弃代码
+client/
+server/
+dist/
+
+# 之前下载的工具
+cloudflared.exe
+
+# 系统
+.DS_Store
+Thumbs.db
+*.log

@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover"/>
+<title>全屋智能选品 · 管理后台</title>
+<style>
+:root{
+  --teal:#0F6E56; --teal-dark:#085041; --teal-50:#E1F5EE;
+  --price:#E24B4A; --amber:#BA7517; --amber-50:#FAEEDA; --green:#059669; --green-50:#F0FDF4;
+  --bg:#F1F5F9; --card:#FFFFFF; --text:#1F2937; --text2:#6B7280; --text3:#9CA3AF;
+  --border:#E5E7EB; --sidebar:#04342C; --red-50:#FCEBEB;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg);color:var(--text);-webkit-tap-highlight-color:transparent;-webkit-font-smoothing:antialiased}
+button{cursor:pointer;font-family:inherit}
+input,select,textarea{font-family:inherit}
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;background:#000;padding:16px;position:relative;overflow:hidden}
+.login-wrap canvas#prism-bg{position:absolute;inset:0;width:100%;height:100%;z-index:1;pointer-events:none}
+.login-box{
+  background:linear-gradient(135deg,rgba(20,24,38,.7),rgba(14,16,26,.7));
+  backdrop-filter:blur(28px) saturate(1.6);
+  -webkit-backdrop-filter:blur(28px) saturate(1.6);
+  border:1px solid rgba(255,255,255,.14);
+  border-radius:24px;
+  padding:36px 30px 32px;
+  width:100%;max-width:380px;
+  position:relative;z-index:2;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.18),
+    inset 0 -1px 0 rgba(255,255,255,.04);
+}
+.login-box::before{
+  content:"";position:absolute;inset:0;border-radius:24px;pointer-events:none;
+  background:linear-gradient(180deg,rgba(255,255,255,.08),transparent 40%);
+}
+.login-box h1{font-size:22px;font-weight:600;text-align:center;margin-bottom:6px;color:#fff;letter-spacing:.5px}
+.login-box .sub{text-align:center;color:rgba(255,255,255,.55);font-size:13px;margin-bottom:26px;letter-spacing:.3px}
+.input{
+  width:100%;padding:13px 14px;
+  background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:12px;font-size:15px;
+  outline:none;color:#fff;
+  transition:border-color .15s,background .15s,box-shadow .15s;
+}
+.input::placeholder{color:rgba(255,255,255,.35)}
+.input:focus{border-color:rgba(255,255,255,.4);background:rgba(255,255,255,.1);box-shadow:0 0 0 3px rgba(255,255,255,.08)}
+.btn{
+  width:100%;padding:13px;
+  background:linear-gradient(180deg,#15a37f,#0d8a6a);
+  color:#fff;border:none;border-radius:12px;
+  font-size:15px;font-weight:600;letter-spacing:.5px;
+  cursor:pointer;
+  box-shadow:0 6px 20px rgba(15,110,86,.45),inset 0 1px 0 rgba(255,255,255,.2);
+  transition:transform .12s,box-shadow .12s;
+}
+.btn:active{transform:translateY(1px);box-shadow:0 2px 10px rgba(15,110,86,.35)}
+.btn:active{opacity:.85}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.err-msg{padding:10px 12px;background:rgba(220,38,38,.18);border:1px solid rgba(248,113,113,.35);border-radius:10px;color:#FCA5A5;font-size:13px;margin-bottom:14px;backdrop-filter:blur(8px)}
+.admin-layout{display:flex;min-height:100vh}
+.sidebar{width:220px;background:var(--sidebar);color:#fff;flex-shrink:0;position:fixed;top:0;left:0;bottom:0;display:flex;flex-direction:column;z-index:20}
+.sidebar .logo{padding:20px 20px 16px;font-size:16px;font-weight:500;display:flex;align-items:center;gap:9px;border-bottom:1px solid rgba(255,255,255,.08)}
+.sidebar .logo .logo-ic{width:30px;height:30px;border-radius:9px;background:var(--teal);display:flex;align-items:center;justify-content:center}
+.sidebar .nav{padding:12px 10px;flex:1;overflow-y:auto}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px;color:#9FE1CB;font-size:14px;cursor:pointer;margin-bottom:4px;transition:all .15s;border:none;background:transparent;width:100%;text-align:left}
+.nav-item:hover{background:rgba(255,255,255,.06)}
+.nav-item.active{background:var(--teal);color:#fff}
+.nav-item .ni{width:18px;height:18px;display:flex;align-items:center;justify-content:center}
+.sidebar .foot{padding:16px 20px;border-top:1px solid rgba(255,255,255,.08);font-size:13px;color:#9FE1CB}
+.sidebar .foot .logout{color:#FCA5A5;cursor:pointer;background:none;border:none;font-size:13px;padding:0}
+.main{flex:1;margin-left:220px;min-height:100vh}
+.topbar{background:#fff;padding:0 24px;height:60px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:10}
+.topbar .title{font-size:17px;font-weight:500}
+.topbar .user{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--text2)}
+.topbar .avatar{width:32px;height:32px;border-radius:50%;background:var(--teal-50);color:var(--teal);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:500}
+.content{padding:20px 24px 40px}
+.mobile-nav{display:none;background:#fff;border-bottom:1px solid var(--border);overflow-x:auto;position:sticky;top:0;z-index:10;padding:8px 12px;gap:8px;-ms-overflow-style:none;scrollbar-width:none}
+.mobile-nav::-webkit-scrollbar{display:none}
+.mobile-nav .mnav{flex-shrink:0;padding:8px 16px;border-radius:20px;font-size:13px;font-weight:500;border:1px solid var(--border);background:#fff;color:var(--text2);white-space:nowrap}
+.mobile-nav .mnav.active{background:var(--teal);color:#fff;border-color:var(--teal)}
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px;margin-bottom:22px}
+.stat-card{background:#fff;border-radius:16px;padding:18px;border:1px solid var(--border)}
+.stat-card .label{font-size:13px;color:var(--text2)}
+.stat-card .value{font-size:28px;font-weight:500;margin-top:6px}
+.c-teal .value{color:var(--teal)}.c-green .value{color:var(--green)}.c-amber .value{color:var(--amber)}.c-red .value{color:var(--price)}
+.panel{background:#fff;border-radius:16px;border:1px solid var(--border);margin-bottom:20px;overflow:hidden}
+.panel .panel-head{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+.panel .panel-head h3{font-size:15px;font-weight:500}
+.panel .panel-body{padding:16px 20px}
+.row{display:flex;align-items:center;gap:14px;padding:14px 0;border-bottom:1px solid var(--border)}
+.row:last-child{border-bottom:none}
+.row .cell{min-width:0}
+.row .cell-main{flex:1}
+.row .cell-title{font-size:14px;font-weight:500;color:var(--text)}
+.row .cell-sub{font-size:12px;color:var(--text3);margin-top:2px}
+.row .cell-price{font-weight:500;color:var(--price);white-space:nowrap}
+.p-icon-cell{width:40px;height:40px;border-radius:10px;background:var(--teal-50);color:var(--teal);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:20px}
+.badge{display:inline-block;padding:3px 9px;border-radius:8px;font-size:11px;font-weight:500;white-space:nowrap}
+.badge.on{background:var(--green-50);color:var(--green)}
+.badge.off{background:#F3F4F6;color:var(--text2)}
+.badge.active{background:var(--green-50);color:var(--green)}
+.badge.disabled{background:var(--red-50);color:#B91C1C}
+.mini-btn{padding:5px 10px;border-radius:8px;font-size:12px;font-weight:500;border:1px solid var(--border);background:#fff;color:var(--text2);transition:all .12s;white-space:nowrap}
+.mini-btn:hover{background:#F8FAFC}
+.mini-btn.danger{color:#B91C1C;border-color:#fecaca}
+.mini-btn.danger:hover{background:var(--red-50)}
+.mini-btn.warn{color:var(--amber);border-color:#fde68a}
+.mini-btn.warn:hover{background:var(--amber-50)}
+.mini-btn.primary{color:var(--teal);border-color:#9FE1CB}
+.mini-btn.primary:hover{background:var(--teal-50)}
+.mini-btn.green{color:var(--green);border-color:#bbf7d0}
+.mini-btn.green:hover{background:var(--green-50)}
+.btn-actions{display:flex;gap:6px;flex-wrap:wrap}
+.empty{padding:40px;text-align:center;color:var(--text3);font-size:14px}
+.modal-overlay{position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;padding:16px;animation:fadeIn .15s}
+.modal-box{background:#fff;border-radius:18px;width:100%;max-width:500px;max-height:90vh;overflow-y:auto;padding:24px;animation:pop .18s}
+.modal-box h3{font-size:17px;font-weight:500;margin-bottom:18px}
+.modal-box .form-row{margin-bottom:14px}
+.modal-box label{display:block;font-size:13px;font-weight:500;color:#374151;margin-bottom:6px}
+.modal-actions{display:flex;gap:10px;margin-top:20px}
+.modal-actions .btn{flex:1}
+.btn-secondary{background:#fff;color:var(--text2);border:1px solid var(--border)}
+.btn-danger{background:var(--price)}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes pop{from{transform:scale(.95);opacity:0}to{transform:scale(1);opacity:1}}
+.search-bar{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+.search-bar .input{flex:1;min-width:160px}
+.product-pick{max-height:280px;overflow-y:auto;border:1px solid var(--border);border-radius:12px;padding:8px}
+.pick-group{margin-bottom:10px}
+.pick-room{font-size:12px;font-weight:500;color:var(--text2);margin-bottom:6px}
+.pick-item{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:8px;cursor:pointer;font-size:13px;color:var(--text)}
+.pick-item:hover{background:#F8FAFC}
+.pick-item input{accent-color:var(--teal);width:16px;height:16px}
+.pick-item .pi-name{flex:1}
+.pick-item .pi-price{color:var(--price);font-weight:500}
+@media (max-width: 768px){
+  .sidebar{display:none}
+  .main{margin-left:0}
+  .mobile-nav{display:flex}
+  .topbar{padding:0 16px}
+  .content{padding:14px 14px 30px}
+  .stat-grid{grid-template-columns:repeat(2,1fr);gap:10px}
+  .stat-card{padding:14px}
+  .stat-card .value{font-size:22px}
+  .row{gap:10px;padding:12px 0}
+  .btn-actions{width:100%;margin-top:8px}
+  .panel .panel-head{padding:14px 14px}
+  .panel .panel-body{padding:12px 14px}
+}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+const NAV_ICON = {
+  dashboard:'<rect x="4" y="12" width="4" height="8" rx="1"/><rect x="10" y="8" width="4" height="12" rx="1"/><rect x="16" y="4" width="4" height="16" rx="1"/>',
+  users:'<circle cx="9" cy="8" r="3.5"/><path d="M3 20a6 6 0 0 1 12 0M17 8.5a3.5 3.5 0 0 1 0 7"/>',
+  products:'<path d="M3 7l9-4 9 4v10l-9 4-9-4V7z"/><path d="M3 7l9 4 9-4M12 11v10"/>',
+  brand:'<path d="M3 6v12M21 6v12M3 12h18"/>',
+  eco:'<circle cx="12" cy="12" r="8"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18"/>',
+  room:'<path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/>',
+  plan:'<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',
+  article:'<path d="M4 4h16v16H4z"/><path d="M8 8h8M8 12h8M8 16h5"/>'
+};
+function navIcon(k){ return `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${NAV_ICON[k]||NAV_ICON.products}</svg>`; }
+
+const API = {
+  token: localStorage.getItem('admin_token'),
+  async req(method, path, body) {
+    const headers = {'Content-Type':'application/json'};
+    if (this.token) headers['Authorization'] = 'Bearer ' + this.token;
+    const res = await fetch(path, {method, headers, body: body?JSON.stringify(body):undefined});
+    const data = await res.json().catch(()=>({}));
+    if (!res.ok) throw new Error(data.error || '请求失败');
+    return data;
+  },
+  login(email,password){ return this.req('POST','/api/admin/login',{email,password}); },
+  stats(){ return this.req('GET','/api/admin/stats'); },
+  users(){ return this.req('GET','/api/admin/users'); },
+  products(){ return this.req('GET','/api/admin/products'); },
+  brands(){ return this.req('GET','/api/admin/brands'); },
+  ecos(){ return this.req('GET','/api/admin/ecos'); },
+  rooms(){ return this.req('GET','/api/rooms'); },
+  plans(){ return this.req('GET','/api/admin/plans'); },
+  articles(){ return this.req('GET','/api/admin/articles'); },
+  disableUser(id){ return this.req('POST',`/api/admin/users/${id}/disable`); },
+  enableUser(id){ return this.req('POST',`/api/admin/users/${id}/enable`); },
+  resetPassword(id,newPassword){ return this.req('POST',`/api/admin/users/${id}/reset-password`,{newPassword}); },
+  changePassword(id,newPassword){ return this.req('POST',`/api/admin/users/${id}/change-password`,{newPassword}); },
+  deleteUser(id){ return this.req('DELETE',`/api/admin/users/${id}`); },
+  addProduct(p){ return this.req('POST','/api/admin/products',p); },
+  updateProduct(id,p){ return this.req('PUT',`/api/admin/products/${id}`,p); },
+  toggleProduct(id){ return this.req('POST',`/api/admin/products/${id}/toggle`); },
+  deleteProduct(id){ return this.req('DELETE',`/api/admin/products/${id}`); },
+  addBrand(name){ return this.req('POST','/api/admin/brands',{name}); },
+  updateBrand(oldName,newName){ return this.req('PUT',`/api/admin/brands/${encodeURIComponent(oldName)}`,{name:newName}); },
+  deleteBrand(name){ return this.req('DELETE',`/api/admin/brands/${encodeURIComponent(name)}`); },
+  addEco(name){ return this.req('POST','/api/admin/ecos',{name}); },
+  updateEco(oldName,newName){ return this.req('PUT',`/api/admin/ecos/${encodeURIComponent(oldName)}`,{name:newName}); },
+  deleteEco(name){ return this.req('DELETE',`/api/admin/ecos/${encodeURIComponent(name)}`); },
+  addRoom(r){ return this.req('POST','/api/rooms',r); },
+  updateRoom(key,r){ return this.req('PUT',`/api/rooms/${encodeURIComponent(key)}`,r); },
+  deleteRoom(key){ return this.req('DELETE',`/api/rooms/${encodeURIComponent(key)}`); },
+  addPlan(p){ return this.req('POST','/api/admin/plans',p); },
+  updatePlan(id,p){ return this.req('PUT',`/api/admin/plans/${id}`,p); },
+  deletePlan(id){ return this.req('DELETE',`/api/admin/plans/${id}`); },
+  addArticle(a){ return this.req('POST','/api/admin/articles',a); },
+  updateArticle(id,a){ return this.req('PUT',`/api/admin/articles/${id}`,a); },
+  deleteArticle(id){ return this.req('DELETE',`/api/admin/articles/${id}`); },
+  logout(){ localStorage.removeItem('admin_token'); localStorage.removeItem('admin_user'); }
+};
+
+const $ = (s,el=document)=>el.querySelector(s);
+const $$ = (s,el=document)=>el.querySelectorAll(s);
+
+let state = {
+  user: JSON.parse(localStorage.getItem('admin_user')||'null'),
+  view: 'dashboard',
+  stats: null, users: [], products: [], brands: [], ecos: [], rooms: [], plans: [], articles: [],
+  userSearch:'', productSearch:'', roomFilter:'all'
+};
+
+function render(){
+  const app = $('#app');
+  if(!API.token || !state.user){ app.innerHTML = renderLogin(); bindLogin(); initPrism(); return; }
+  app.innerHTML = renderLayout();
+  bindLayout();
+  ensureBaseData().then(()=>refreshView());
+}
+
+function renderLogin(){
+  return `<div class="login-wrap"><canvas id="prism-bg"></canvas><div class="login-box"><h1>管理后台</h1><p class="sub">全屋智能选品 · 管理员登录</p><div id="errBox"></div><div style="margin-bottom:14px"><label style="display:block;font-size:13px;font-weight:500;color:#374151;margin-bottom:6px">管理员邮箱</label><input class="input" id="emailInput" type="email" value="admin@admin.com"/></div><div style="margin-bottom:20px"><label style="display:block;font-size:13px;font-weight:500;color:#374151;margin-bottom:6px">密码</label><input class="input" id="pwdInput" type="password" value="admin123"/></div><button class="btn" id="loginBtn">登 录</button></div></div>`;
+}
+function bindLogin(){
+  const errBox=$('#errBox'), btn=$('#loginBtn');
+  btn.addEventListener('click', async ()=>{
+    errBox.innerHTML=''; btn.disabled=true; btn.textContent='登录中...';
+    try{
+      const data = await API.login($('#emailInput').value.trim(), $('#pwdInput').value.trim());
+      API.token = data.token;
+      localStorage.setItem('admin_token', data.token);
+      localStorage.setItem('admin_user', JSON.stringify(data.user));
+      state.user = data.user;
+      render();
+    }catch(e){ errBox.innerHTML=`<div class="err-msg">${e.message}</div>`; btn.disabled=false; btn.textContent='登 录'; }
+  });
+}
+
+async function ensureBaseData(){
+  try {
+    const [bd, ed, rd] = await Promise.all([API.brands(), API.ecos(), API.rooms()]);
+    state.brands = bd.brands || [];
+    state.ecos = ed.ecos || [];
+    state.rooms = rd.rooms || [];
+  } catch(e){}
+}
+function roomName(key){ const r = state.rooms.find(x=>x.key===key); return r?r.name:key; }
+
+function renderLayout(){
+  const navs = [
+    {key:'dashboard', icon:'dashboard', label:'数据概览'},
+    {key:'users', icon:'users', label:'用户管理'},
+    {key:'products', icon:'products', label:'商品管理'},
+    {key:'brands', icon:'brand', label:'品牌管理'},
+    {key:'ecos', icon:'eco', label:'生态管理'},
+    {key:'rooms', icon:'room', label:'房间管理'},
+    {key:'plans', icon:'plan', label:'方案管理'},
+    {key:'articles', icon:'article', label:'文章管理'}
+  ];
+  return `
+    <div class="admin-layout">
+      <aside class="sidebar">
+        <div class="logo"><span class="logo-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg></span>全屋智能选品</div>
+        <nav class="nav">${navs.map(n=>`<button class="nav-item ${n.key===state.view?'active':''}" data-view="${n.key}"><span class="ni">${navIcon(n.icon)}</span>${n.label}</button>`).join('')}</nav>
+        <div class="foot"><div style="margin-bottom:6px">${state.user.nickname||state.user.email}</div><button class="logout" id="logoutBtn">退出登录</button></div>
+      </aside>
+      <div class="main">
+        <div class="mobile-nav" id="mobileNav">${navs.map(n=>`<button class="mnav ${n.key===state.view?'active':''}" data-view="${n.key}">${n.label}</button>`).join('')}</div>
+        <div class="topbar"><div class="title">${navs.find(n=>n.key===state.view)?.label}</div><div class="user"><span class="avatar">${(state.user.nickname||'管').charAt(0)}</span><span>${state.user.nickname||state.user.email}</span></div></div>
+        <div class="content" id="viewContent"><div class="empty">加载中...</div></div>
+      </div>
+    </div>`;
+}
+function bindLayout(){
+  $$('.nav-item,.mnav').forEach(btn=>btn.addEventListener('click',()=>{ state.view=btn.dataset.view; render(); }));
+  const lb=$('#logoutBtn'); if(lb) lb.addEventListener('click',()=>{ API.logout(); state.user=null; render(); });
+}
+
+async function refreshView(){
+  const content = $('#viewContent');
+  content.innerHTML = '<div class="empty">加载中...</div>';
+  try{
+    if(state.view==='dashboard'){ const {stats}=await API.stats(); state.stats=stats; content.innerHTML=renderDashboard(stats); }
+    else if(state.view==='users'){ const {users}=await API.users(); state.users=users; content.innerHTML=renderUsers(users); bindUsers(); }
+    else if(state.view==='products'){ const {products}=await API.products(); state.products=products; content.innerHTML=renderProducts(products); bindProducts(); }
+    else if(state.view==='brands'){ const {brands}=await API.brands(); state.brands=brands; content.innerHTML=renderNames(brands,'brand'); bindNames('brand'); }
+    else if(state.view==='ecos'){ const {ecos}=await API.ecos(); state.ecos=ecos; content.innerHTML=renderNames(ecos,'eco'); bindNames('eco'); }
+    else if(state.view==='rooms'){ const {rooms}=await API.rooms(); state.rooms=rooms; content.innerHTML=renderRooms(rooms); bindRooms(); }
+    else if(state.view==='plans'){ const {plans}=await API.plans(); state.plans=plans; content.innerHTML=renderPlans(plans); bindPlans(); }
+    else if(state.view==='articles'){ const {articles}=await API.articles(); state.articles=articles; content.innerHTML=renderArticles(articles); bindArticles(); }
+  }catch(e){ content.innerHTML = `<div class="empty">加载失败：${e.message}</div>`; }
+}
+
+function renderDashboard(stats){
+  const recentRows=(stats.recentUsers||[]).map(u=>`<div class="row"><div class="cell cell-main"><div class="cell-title">${u.email}</div><div class="cell-sub">${(u.createdAt||'').slice(0,10)}</div></div></div>`).join('')||'<div class="empty">暂无用户</div>';
+  return `
+    <div class="stat-grid">
+      <div class="stat-card c-teal"><div class="label">总用户数</div><div class="value">${stats.totalUsers}</div></div>
+      <div class="stat-card c-green"><div class="label">活跃用户</div><div class="value">${stats.activeUsers}</div></div>
+      <div class="stat-card c-red"><div class="label">已停用</div><div class="value">${stats.disabledUsers}</div></div>
+      <div class="stat-card c-teal"><div class="label">商品总数</div><div class="value">${stats.totalProducts}</div></div>
+      <div class="stat-card c-green"><div class="label">在售商品</div><div class="value">${stats.onProducts}</div></div>
+      <div class="stat-card c-amber"><div class="label">品牌数</div><div class="value">${stats.brandCount}</div></div>
+      <div class="stat-card c-amber"><div class="label">生态数</div><div class="value">${stats.ecoCount}</div></div>
+      <div class="stat-card c-teal"><div class="label">房间数</div><div class="value">${stats.roomCount}</div></div>
+      <div class="stat-card c-teal"><div class="label">方案数</div><div class="value">${stats.planCount}</div></div>
+      <div class="stat-card c-green"><div class="label">文章数</div><div class="value">${stats.articleCount}</div></div>
+    </div>
+    <div class="panel"><div class="panel-head"><h3>最近注册用户</h3></div><div class="panel-body">${recentRows}</div></div>`;
+}
+
+function renderUsers(users){
+  const filtered = users.filter(u => !state.userSearch || u.email.includes(state.userSearch) || (u.nickname||'').includes(state.userSearch));
+  const badge = u => u.status==='active'?'<span class="badge on">正常</span>':'<span class="badge disabled">已停用</span>';
+  const rows = filtered.map(u=>`<div class="row"><div class="cell cell-main"><div class="cell-title">${u.email}</div><div class="cell-sub">昵称：${u.nickname||'-'} · 注册：${(u.createdAt||'').slice(0,10)} · 选品 ${u.selectionCount} 件</div></div><div class="cell">${badge(u)}</div><div class="btn-actions">${u.status!=='active'?`<button class="mini-btn green" data-act="enable" data-id="${u.id}">启用</button>`:`<button class="mini-btn warn" data-act="disable" data-id="${u.id}">停用</button>`}<button class="mini-btn primary" data-act="change-password" data-id="${u.id}">改密</button><button class="mini-btn" data-act="reset-password" data-id="${u.id}">重置密码</button><button class="mini-btn danger" data-act="delete" data-id="${u.id}">注销</button></div></div>`).join('')||'<div class="empty">暂无用户</div>';
+  return `<div class="search-bar"><input class="input" id="userSearch" placeholder="搜索邮箱或昵称" value="${state.userSearch}"/></div><div class="panel"><div class="panel-head"><h3>用户列表（${filtered.length}）</h3></div><div class="panel-body">${rows}</div></div>`;
+}
+function bindUsers(){
+  const s=$('#userSearch'); s.addEventListener('input',()=>{ state.userSearch=s.value.trim(); renderUsers(state.users); bindUsers(); });
+  $$('[data-act]').forEach(btn=>{ btn.addEventListener('click', async ()=>{
+    const id=btn.dataset.id, act=btn.dataset.act; const user=state.users.find(u=>u.id===id);
+    if(act==='delete'){ if(!confirm(`确定注销账号 ${user?.email} ？`)) return; try{ await API.deleteUser(id); toast('已注销'); refreshView(); }catch(e){ toast(e.message); } }
+    else if(act==='disable'){ if(!confirm(`确定停用 ${user?.email} ？`)) return; try{ await API.disableUser(id); toast('已停用'); refreshView(); }catch(e){ toast(e.message); } }
+    else if(act==='enable'){ try{ await API.enableUser(id); toast('已启用'); refreshView(); }catch(e){ toast(e.message); } }
+    else if(act==='change-password'||act==='reset-password'){ showPasswordModal(user,act); }
+  }); });
+}
+
+function renderProducts(products){
+  const filtered=products.filter(p=>{ if(state.productSearch&&!(p.name.includes(state.productSearch)||(p.brand||'').includes(state.productSearch)))return false; if(state.roomFilter!=='all'&&p.room!==state.roomFilter)return false; return true; });
+  const roomOptions=['all',...state.rooms.map(r=>r.key)].map(k=>`<option value="${k}">${k==='all'?'全部房间':roomName(k)}</option>`).join('');
+  const rows=filtered.map(p=>`<div class="row"><div class="p-icon-cell">${p.icon||'📦'}</div><div class="cell cell-main"><div class="cell-title">${p.name}</div><div class="cell-sub">${p.brand} · ${p.eco||''} · ${roomName(p.room)} · ${p.desc}</div></div><div class="cell cell-price">¥${p.price}</div><div class="cell"><span class="badge ${p.status==='on'?'on':'off'}">${p.status==='on'?'在售':'已下架'}</span></div><div class="btn-actions"><button class="mini-btn primary" data-act="edit" data-id="${p.id}">编辑</button><button class="mini-btn ${p.status==='on'?'warn':'green'}" data-act="toggle" data-id="${p.id}">${p.status==='on'?'下架':'上架'}</button><button class="mini-btn danger" data-act="delete" data-id="${p.id}">删除</button></div></div>`).join('')||'<div class="empty">暂无商品</div>';
+  return `<div class="search-bar"><input class="input" id="productSearch" placeholder="搜索商品名称或品牌" value="${state.productSearch}" style="flex:2"/><select class="input" id="roomFilter" style="flex:1;min-width:120px">${roomOptions}</select><button class="btn" id="addProductBtn" style="width:auto;padding:12px 18px">＋ 上新</button></div><div class="panel"><div class="panel-head"><h3>商品列表（${filtered.length}）</h3><span style="font-size:12px;color:var(--text3)">在售 ${products.filter(p=>p.status==='on').length} / 下架 ${products.filter(p=>p.status!=='on').length}</span></div><div class="panel-body">${rows}</div></div>`;
+}
+function bindProducts(){
+  const s=$('#productSearch'); s.addEventListener('input',()=>{ state.productSearch=s.value.trim(); renderProducts(state.products); bindProducts(); });
+  const rf=$('#roomFilter'); rf.value=state.roomFilter; rf.addEventListener('change',()=>{ state.roomFilter=rf.value; renderProducts(state.products); bindProducts(); });
+  $('#addProductBtn').addEventListener('click',()=>showProductModal(null));
+  $$('[data-act]').forEach(btn=>{ btn.addEventListener('click', async ()=>{
+    const id=btn.dataset.id, act=btn.dataset.act; const p=state.products.find(x=>x.id===id);
+    if(act==='toggle'){ try{ await API.toggleProduct(id); toast(p.status==='on'?'已下架':'已上架'); refreshView(); }catch(e){ toast(e.message); } }
+    else if(act==='delete'){ if(!confirm(`确定删除商品「${p.name}」？`)) return; try{ await API.deleteProduct(id); toast('已删除'); refreshView(); }catch(e){ toast(e.message); } }
+    else if(act==='edit'){ showProductModal(p); }
+  }); });
+}
+
+function renderNames(list, type){
+  const label = type==='brand'?'品牌':'生态';
+  const rows=list.map(b=>`<div class="row"><div class="cell cell-main"><div class="cell-title">${b.name}</div><div class="cell-sub">${b.count} 个商品</div></div><div class="btn-actions"><button class="mini-btn primary" data-act="edit" data-name="${b.name}">改名</button><button class="mini-btn danger" data-act="delete" data-name="${b.name}">删除</button></div></div>`).join('')||'<div class="empty">暂无'+label+'</div>';
+  return `<div class="search-bar"><button class="btn" id="addNameBtn" style="width:auto;padding:12px 18px">＋ 新增${label}</button></div><div class="panel"><div class="panel-head"><h3>${label}列表（${list.length}）</h3></div><div class="panel-body">${rows}</div></div>`;
+}
+function bindNames(type){
+  const label = type==='brand'?'品牌':'生态';
+  $('#addNameBtn').addEventListener('click',()=>showNameModal(null,type));
+  $$('[data-act]').forEach(btn=>{ btn.addEventListener('click', async ()=>{
+    const name=btn.dataset.name, act=btn.dataset.act;
+    if(act==='edit'){ showNameModal(name,type); }
+    else if(act==='delete'){ if(!confirm(`确定删除${label}「${name}」？`)) return; try{ if(type==='brand') await API.deleteBrand(name); else await API.deleteEco(name); toast('已删除'); refreshView(); }catch(e){ toast(e.message); } }
+  }); });
+}
+
+function renderRooms(rooms){
+  const rows=rooms.map(r=>`<div class="row"><div class="p-icon-cell">${r.icon||'🏠'}</div><div class="cell cell-main"><div class="cell-title">${r.name}</div><div class="cell-sub">${r.count} 个商品</div></div><div class="btn-actions"><button class="mini-btn primary" data-act="edit" data-key="${r.key}">编辑</button><button class="mini-btn danger" data-act="delete" data-key="${r.key}">删除</button></div></div>`).join('')||'<div class="empty">暂无房间</div>';
+  return `<div class="search-bar"><button class="btn" id="addRoomBtn" style="width:auto;padding:12px 18px">＋ 新增房间</button></div><div class="panel"><div class="panel-head"><h3>房间列表（${rooms.length}）</h3></div><div class="panel-body">${rows}</div></div>`;
+}
+function bindRooms(){
+  $('#addRoomBtn').addEventListener('click',()=>showRoomModal(null));
+  $$('[data-act]').forEach(btn=>{ btn.addEventListener('click', async ()=>{
+    const key=btn.dataset.key, act=btn.dataset.act; const r=state.rooms.find(x=>x.key===key);
+    if(act==='edit'){ showRoomModal(r); }
+    else if(act==='delete'){ if(!confirm(`确定删除房间「${r.name}」？`)) return; try{ await API.deleteRoom(key); toast('已删除'); refreshView(); }catch(e){ toast(e.message); } }
+  }); });
+}
+
+function renderPlans(plans){
+  const rows=plans.map(p=>{ const total=p.products.reduce((s,x)=>s+x.price,0); return `<div class="row"><div class="cell cell-main"><div class="cell-title">${p.icon||''} ${p.name}</div><div class="cell-sub">${p.desc||''} · ${p.products.length} 件</div></div><div class="cell cell-price">¥${total}</div><div class="btn-actions"><button class="mini-btn primary" data-act="edit" data-id="${p.id}">编辑</button><button class="mini-btn danger" data-act="delete" data-id="${p.id}">删除</button></div></div>`; }).join('')||'<div class="empty">暂无方案</div>';
+  return `<div class="search-bar"><button class="btn" id="addPlanBtn" style="width:auto;padding:12px 18px">＋ 新增方案</button></div><div class="panel"><div class="panel-head"><h3>方案列表（${plans.length}）</h3></div><div class="panel-body">${rows}</div></div>`;
+}
+function bindPlans(){
+  $('#addPlanBtn').addEventListener('click',()=>showPlanModal(null));
+  $$('[data-act]').forEach(btn=>{ btn.addEventListener('click', async ()=>{
+    const id=btn.dataset.id, act=btn.dataset.act; const p=state.plans.find(x=>x.id===id);
+    if(act==='edit'){ showPlanModal(p); }
+    else if(act==='delete'){ if(!confirm(`确定删除方案「${p.name}」？`)) return; try{ await API.deletePlan(id); toast('已删除'); refreshView(); }catch(e){ toast(e.message); } }
+  }); });
+}
+
+function renderArticles(articles){
+  const rows=articles.map(a=>`<div class="row"><div class="p-icon-cell">${a.cover||'📄'}</div><div class="cell cell-main"><div class="cell-title">${a.title}</div><div class="cell-sub">${(a.summary||'').slice(0,40)} · ${(a.createdAt||'').slice(0,10)}</div></div><div class="btn-actions"><button class="mini-btn primary" data-act="edit" data-id="${a.id}">编辑</button><button class="mini-btn danger" data-act="delete" data-id="${a.id}">删除</button></div></div>`).join('')||'<div class="empty">暂无文章</div>';
+  return `<div class="search-bar"><button class="btn" id="addArticleBtn" style="width:auto;padding:12px 18px">＋ 新增文章</button></div><div class="panel"><div class="panel-head"><h3>文章列表（${articles.length}）</h3></div><div class="panel-body">${rows}</div></div>`;
+}
+function bindArticles(){
+  $('#addArticleBtn').addEventListener('click',()=>showArticleModal(null));
+  $$('[data-act]').forEach(btn=>{ btn.addEventListener('click', async ()=>{
+    const id=btn.dataset.id, act=btn.dataset.act; const a=state.articles.find(x=>x.id===id);
+    if(act==='edit'){ showArticleModal(a); }
+    else if(act==='delete'){ if(!confirm(`确定删除文章「${a.title}」？`)) return; try{ await API.deleteArticle(id); toast('已删除'); refreshView(); }catch(e){ toast(e.message); } }
+  }); });
+}
+
+function showNameModal(oldName, type){
+  const label = type==='brand'?'品牌':'生态';
+  const overlay=document.createElement('div'); overlay.className='modal-overlay';
+  overlay.innerHTML=`<div class="modal-box"><h3>${oldName?'修改'+label:'新增'+label}</h3><div class="form-row"><label>${label}名称</label><input class="input" id="f_name" value="${oldName||''}" placeholder="如：小米"/></div><div class="modal-actions"><button class="btn btn-secondary" id="cancelBtn">取消</button><button class="btn" id="confirmBtn">${oldName?'保存':'新增'}</button></div></div>`;
+  document.body.appendChild(overlay);
+  overlay.querySelector('#cancelBtn').addEventListener('click',()=>overlay.remove());
+  overlay.addEventListener('click',e=>{ if(e.target===overlay) overlay.remove(); });
+  overlay.querySelector('#confirmBtn').addEventListener('click', async ()=>{
+    const name=overlay.querySelector('#f_name').value.trim();
+    if(!name){ toast(label+'名称不能为空'); return; }
+    try{ if(oldName){ if(type==='brand') await API.updateBrand(oldName,name); else await API.updateEco(oldName,name); } else { if(type==='brand') await API.addBrand(name); else await API.addEco(name); } toast('已保存'); overlay.remove(); refreshView(); }catch(e){ toast(e.message); }
+  });
+}
+
+function showRoomModal(r){
+  const overlay=document.createElement('div'); overlay.className='modal-overlay';
+  overlay.innerHTML=`<div class="modal-box"><h3>${r?'编辑房间':'新增房间'}</h3>
+    <div class="form-row"><label>房间名称</label><input class="input" id="f_name" value="${r?.name||''}" placeholder="如：衣帽间"/></div>
+    <div class="form-row"><label>图标（emoji）</label><input class="input" id="f_icon" value="${r?.icon||''}" placeholder="如：👗"/></div>
+    <div class="modal-actions"><button class="btn btn-secondary" id="cancelBtn">取消</button><button class="btn" id="confirmBtn">${r?'保存':'新增'}</button></div></div>`;
+  document.body.appendChild(overlay);
+  overlay.querySelector('#cancelBtn').addEventListener('click',()=>overlay.remove());
+  overlay.addEventListener('click',e=>{ if(e.target===overlay) overlay.remove(); });
+  overlay.querySelector('#confirmBtn').addEventListener('click', async ()=>{
+    const name=overlay.querySelector('#f_name').value.trim();
+    if(!name){ toast('房间名称不能为空'); return; }
+    const data={name, icon:overlay.querySelector('#f_icon').value.trim()||'🏠'};
+    try{ if(r) await API.updateRoom(r.key,data); else await API.addRoom(data); toast('已保存'); overlay.remove(); refreshView(); }catch(e){ toast(e.message); }
+  });
+}
+
+function showPlanModal(p){
+  const isEdit=!!p;
+  const selectedIds = p ? p.products.map(x=>x.id) : [];
+  let pickHTML='';
+  state.rooms.forEach(room=>{
+    const items=state.products.filter(x=>x.room===room.key);
+    if(!items.length) return;
+    const itemHTML=items.map(x=>`<label class="pick-item"><input type="checkbox" data-pid="${x.id}" ${selectedIds.includes(x.id)?'checked':''}/><span class="pi-name">${x.name}</span><span class="pi-price">¥${x.price}</span></label>`).join('');
+    pickHTML+=`<div class="pick-group"><div class="pick-room">${room.icon||''} ${room.name}</div>${itemHTML}</div>`;
+  });
+  const overlay=document.createElement('div'); overlay.className='modal-overlay';
+  overlay.innerHTML=`<div class="modal-box"><h3>${isEdit?'编辑方案':'新增方案'}</h3>
+    <div class="form-row"><label>方案名称 *</label><input class="input" id="f_name" value="${p?.name||''}" placeholder="如：A方案 · 经济实用"/></div>
+    <div class="form-row"><label>描述</label><input class="input" id="f_desc" value="${p?.desc||''}" placeholder="简短描述"/></div>
+    <div class="form-row"><label>图标（emoji）</label><input class="input" id="f_icon" value="${p?.icon||''}" placeholder="如：💰"/></div>
+    <div class="form-row"><label>关联商品（勾选）</label><div class="product-pick">${pickHTML}</div></div>
+    <div class="modal-actions"><button class="btn btn-secondary" id="cancelBtn">取消</button><button class="btn" id="confirmBtn">${isEdit?'保存':'创建'}</button></div></div>`;
+  document.body.appendChild(overlay);
+  overlay.querySelector('#cancelBtn').addEventListener('click',()=>overlay.remove());
+  overlay.addEventListener('click',e=>{ if(e.target===overlay) overlay.remove(); });
+  overlay.querySelector('#confirmBtn').addEventListener('click', async ()=>{
+    const name=overlay.querySelector('#f_name').value.trim();
+    if(!name){ toast('方案名称必填'); return; }
+    const ids=[...overlay.querySelectorAll('[data-pid]:checked')].map(c=>c.dataset.pid);
+    const data={ name, desc:overlay.querySelector('#f_desc').value.trim(), icon:overlay.querySelector('#f_icon').value.trim(), products:ids };
+    try{ if(isEdit) await API.updatePlan(p.id,data); else await API.addPlan(data); toast('已保存'); overlay.remove(); refreshView(); }catch(e){ toast(e.message); }
+  });
+}
+
+function showArticleModal(a){
+  const isEdit=!!a;
+  const overlay=document.createElement('div'); overlay.className='modal-overlay';
+  overlay.innerHTML=`<div class="modal-box"><h3>${isEdit?'编辑文章':'新增文章'}</h3>
+    <div class="form-row"><label>标题 *</label><input class="input" id="f_title" value="${a?.title||''}" placeholder="文章标题"/></div>
+    <div class="form-row"><label>封面（emoji）</label><input class="input" id="f_cover" value="${a?.cover||''}" placeholder="如：🏠"/></div>
+    <div class="form-row"><label>摘要</label><input class="input" id="f_summary" value="${a?.summary||''}" placeholder="一句话摘要"/></div>
+    <div class="form-row"><label>正文（段落用换行分隔）</label><textarea class="input" id="f_content" rows="10" placeholder="第一段&#10;&#10;第二段">${a?.content||''}</textarea></div>
+    <div class="modal-actions"><button class="btn btn-secondary" id="cancelBtn">取消</button><button class="btn" id="confirmBtn">${isEdit?'保存':'发布'}</button></div></div>`;
+  document.body.appendChild(overlay);
+  overlay.querySelector('#cancelBtn').addEventListener('click',()=>overlay.remove());
+  overlay.addEventListener('click',e=>{ if(e.target===overlay) overlay.remove(); });
+  overlay.querySelector('#confirmBtn').addEventListener('click', async ()=>{
+    const title=overlay.querySelector('#f_title').value.trim();
+    if(!title){ toast('标题必填'); return; }
+    const data={ title, cover:overlay.querySelector('#f_cover').value.trim()||'📄', summary:overlay.querySelector('#f_summary').value.trim(), content:overlay.querySelector('#f_content').value };
+    try{ if(isEdit) await API.updateArticle(a.id,data); else await API.addArticle(data); toast('已保存'); overlay.remove(); refreshView(); }catch(e){ toast(e.message); }
+  });
+}
+
+function showProductModal(p){
+  const isEdit=!!p;
+  const brandOptions=state.brands.map(b=>`<option value="${b.name}" ${p?.brand===b.name?'selected':''}>${b.name}</option>`).join('');
+  const ecoOptions=state.ecos.map(b=>`<option value="${b.name}" ${p?.eco===b.name?'selected':''}>${b.name}</option>`).join('');
+  const roomOptions=state.rooms.map(r=>`<option value="${r.key}" ${p?.room===r.key?'selected':''}>${r.icon||''} ${r.name}</option>`).join('');
+  const overlay=document.createElement('div'); overlay.className='modal-overlay';
+  overlay.innerHTML=`<div class="modal-box"><h3>${isEdit?'编辑商品':'新增商品'}</h3>
+    <div class="form-row"><label>商品名称 *</label><input class="input" id="f_name" value="${p?.name||''}" placeholder="如：智能开关Pro"/></div>
+    <div class="form-row"><label>品牌 *</label><select class="input" id="f_brand">${brandOptions}</select></div>
+    <div class="form-row"><label>生态 *</label><select class="input" id="f_eco">${ecoOptions}</select></div>
+    <div class="form-row"><label>所属房间 *</label><select class="input" id="f_room">${roomOptions}</select></div>
+    <div class="form-row"><label>价格（元）*</label><input class="input" id="f_price" type="number" value="${p?.price??''}" placeholder="如：199"/></div>
+    <div class="form-row"><label>图标（emoji）</label><input class="input" id="f_icon" value="${p?.icon||''}" placeholder="如：💡"/></div>
+    <div class="form-row"><label>标签</label><select class="input" id="f_tag"><option value="">无</option><option value="推荐" ${p?.tag==='推荐'?'selected':''}>推荐</option><option value="热卖" ${p?.tag==='热卖'?'selected':''}>热卖</option><option value="新品" ${p?.tag==='新品'?'selected':''}>新品</option><option value="必装" ${p?.tag==='必装'?'selected':''}>必装</option></select></div>
+    <div class="form-row"><label>商品描述</label><textarea class="input" id="f_desc" rows="2" placeholder="简短描述">${p?.desc||''}</textarea></div>
+    <div class="form-row"><label>状态</label><select class="input" id="f_status"><option value="on" ${p?.status!=='off'?'selected':''}>在售</option><option value="off" ${p?.status==='off'?'selected':''}>下架</option></select></div>
+    <div class="modal-actions"><button class="btn btn-secondary" id="cancelBtn">取消</button><button class="btn" id="confirmBtn">${isEdit?'保存':'创建'}</button></div></div>`;
+  document.body.appendChild(overlay);
+  overlay.querySelector('#cancelBtn').addEventListener('click',()=>overlay.remove());
+  overlay.addEventListener('click',e=>{ if(e.target===overlay) overlay.remove(); });
+  overlay.querySelector('#confirmBtn').addEventListener('click', async ()=>{
+    const data={ name:overlay.querySelector('#f_name').value.trim(), brand:overlay.querySelector('#f_brand').value, eco:overlay.querySelector('#f_eco').value, room:overlay.querySelector('#f_room').value, price:Number(overlay.querySelector('#f_price').value), icon:overlay.querySelector('#f_icon').value.trim(), tag:overlay.querySelector('#f_tag').value, desc:overlay.querySelector('#f_desc').value.trim(), status:overlay.querySelector('#f_status').value };
+    if(!data.name||!data.room||data.price==null||isNaN(data.price)){ toast('请填写商品名称、房间和价格'); return; }
+    try{ if(isEdit) await API.updateProduct(p.id,data); else await API.addProduct(data); toast('已保存'); overlay.remove(); refreshView(); }catch(e){ toast(e.message); }
+  });
+}
+
+function showPasswordModal(user,act){
+  const isReset=act==='reset-password';
+  const overlay=document.createElement('div'); overlay.className='modal-overlay';
+  overlay.innerHTML=`<div class="modal-box"><h3>${isReset?'重置密码':'修改密码'} — ${user.email}</h3><div class="form-row"><label>${isReset?'新密码（留空则重置为 123456）':'新密码'} *</label><input class="input" id="f_pwd" type="text" placeholder="${isReset?'默认 123456':'至少6位'}" value="${isReset?'123456':''}"/></div><div class="modal-actions"><button class="btn btn-secondary" id="cancelBtn">取消</button><button class="btn" id="confirmBtn">确认${isReset?'重置':'修改'}</button></div></div>`;
+  document.body.appendChild(overlay);
+  overlay.querySelector('#cancelBtn').addEventListener('click',()=>overlay.remove());
+  overlay.addEventListener('click',e=>{ if(e.target===overlay) overlay.remove(); });
+  overlay.querySelector('#confirmBtn').addEventListener('click', async ()=>{
+    const np=overlay.querySelector('#f_pwd').value.trim();
+    if(np.length<6){ toast('密码至少6位'); return; }
+    try{ if(isReset) await API.resetPassword(user.id,np); else await API.changePassword(user.id,np); toast('已处理'); overlay.remove(); refreshView(); }catch(e){ toast(e.message); }
+  });
+}
+
+function toast(msg){
+  const t=document.createElement('div'); t.textContent=msg;
+  Object.assign(t.style,{position:'fixed',top:'20px',left:'50%',transform:'translateX(-50%)',background:'#1F2937',color:'#fff',padding:'10px 20px',borderRadius:'10px',fontSize:'14px',zIndex:'999'});
+  document.body.appendChild(t);
+  setTimeout(()=>{ t.style.opacity='0'; setTimeout(()=>t.remove(),300); },2000);
+}
+
+/* ===== Prism 棱镜折射光背景（等价复刻 @react-bits/Prism-JS-CSS，原生 WebGL ray marching） ===== */
+let prismCanvas = null, prismRAF = 0;
+function initPrism(){
+  const canvas = document.getElementById('prism-bg');
+  if(!canvas || canvas === prismCanvas) return;
+  if(prismRAF) cancelAnimationFrame(prismRAF);
+  prismCanvas = canvas;
+  startPrism(canvas);
+}
+function startPrism(canvas){
+  const gl = canvas.getContext('webgl', {alpha:true, antialias:false}) || canvas.getContext('webgl2', {alpha:true, antialias:false});
+  if(!gl){ prismCanvas = null; return; }
+  const VERT = 'attribute vec2 position;void main(){ gl_Position = vec4(position, 0.0, 1.0); }';
+  const FRAG = `precision highp float;
+uniform vec2 iResolution;
+uniform float iTime;
+uniform float uHeight;
+uniform float uBaseHalf;
+uniform mat3 uRot;
+uniform int uUseBaseWobble;
+uniform float uGlow;
+uniform vec2 uOffsetPx;
+uniform float uNoise;
+uniform float uSaturation;
+uniform float uScale;
+uniform float uHueShift;
+uniform float uColorFreq;
+uniform float uBloom;
+uniform float uCenterShift;
+uniform float uInvBaseHalf;
+uniform float uInvHeight;
+uniform float uMinAxis;
+uniform float uPxScale;
+uniform float uTimeScale;
+vec4 tanh4(vec4 x){ vec4 e2x = exp(2.0*x); return (e2x - 1.0)/(e2x + 1.0); }
+float rand(vec2 co){ return fract(sin(dot(co, vec2(12.9898,78.233))) * 43758.5453123); }
+float sdOctaAnisoInv(vec3 p){
+  vec3 q = vec3(abs(p.x)*uInvBaseHalf, abs(p.y)*uInvHeight, abs(p.z)*uInvBaseHalf);
+  float m = q.x + q.y + q.z - 1.0;
+  return m * uMinAxis * 0.5773502691896258;
+}
+float sdPyramidUpInv(vec3 p){
+  float oct = sdOctaAnisoInv(p);
+  float halfSpace = -p.y;
+  return max(oct, halfSpace);
+}
+mat3 hueRotation(float a){
+  float c = cos(a), s = sin(a);
+  mat3 W = mat3(0.299,0.587,0.114, 0.299,0.587,0.114, 0.299,0.587,0.114);
+  mat3 U = mat3(0.701,-0.587,-0.114, -0.299,0.413,-0.114, -0.300,-0.588,0.886);
+  mat3 V = mat3(0.168,-0.331,0.500, 0.328,0.035,-0.500, -0.497,0.296,0.201);
+  return W + U*c + V*s;
+}
+void main(){
+  vec2 f = (gl_FragCoord.xy - 0.5*iResolution.xy - uOffsetPx) * uPxScale;
+  float z = 5.0;
+  float d = 0.0;
+  vec3 p;
+  vec4 o = vec4(0.0);
+  float centerShift = uCenterShift;
+  float cf = uColorFreq;
+  mat2 wob = mat2(1.0);
+  if(uUseBaseWobble == 1){
+    float t = iTime * uTimeScale;
+    float c0 = cos(t + 0.0);
+    float c1 = cos(t + 33.0);
+    float c2 = cos(t + 11.0);
+    wob = mat2(c0, c1, c2, c0);
+  }
+  const int STEPS = 100;
+  for(int i = 0; i < STEPS; i++){
+    p = vec3(f, z);
+    p.xz = p.xz * wob;
+    p = uRot * p;
+    vec3 q = p;
+    q.y += centerShift;
+    d = 0.1 + 0.2 * abs(sdPyramidUpInv(q));
+    z -= d;
+    o += (sin((p.y + z) * cf + vec4(0.0,1.0,2.0,3.0)) + 1.0)/d;
+  }
+  o = tanh4(o*o*(uGlow*uBloom)/1e6);
+  vec3 col = o.rgb;
+  float n = rand(gl_FragCoord.xy + vec2(iTime));
+  col += (n - 0.5) * uNoise;
+  col = clamp(col, 0.0, 1.0);
+  float L = dot(col, vec3(0.2126,0.7152,0.0722));
+  col = clamp(mix(vec3(L), col, uSaturation), 0.0, 1.0);
+  if(abs(uHueShift) > 0.0001){ col = clamp(hueRotation(uHueShift) * col, 0.0, 1.0); }
+  gl_FragColor = vec4(col, o.a);
+}`;
+  function compile(type, src){
+    const s = gl.createShader(type);
+    gl.shaderSource(s, src); gl.compileShader(s);
+    if(!gl.getShaderParameter(s, gl.COMPILE_STATUS)){ console.error(gl.getShaderInfoLog(s)); return null; }
+    return s;
+  }
+  const vs = compile(gl.VERTEX_SHADER, VERT);
+  const fs = compile(gl.FRAGMENT_SHADER, FRAG);
+  if(!vs || !fs){ prismCanvas = null; return; }
+  const prog = gl.createProgram();
+  gl.attachShader(prog, vs); gl.attachShader(prog, fs); gl.linkProgram(prog);
+  if(!gl.getProgramParameter(prog, gl.LINK_STATUS)){ console.error(gl.getProgramInfoLog(prog)); prismCanvas = null; return; }
+  gl.useProgram(prog);
+  const buf = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 3,-1, -1,3]), gl.STATIC_DRAW);
+  const posLoc = gl.getAttribLocation(prog, 'position');
+  gl.enableVertexAttribArray(posLoc);
+  gl.vertexAttribPointer(posLoc, 2, gl.FLOAT, false, 0, 0);
+  const U = {};
+  ['iResolution','iTime','uHeight','uBaseHalf','uRot','uUseBaseWobble','uGlow','uOffsetPx','uNoise','uSaturation','uScale','uHueShift','uColorFreq','uBloom','uCenterShift','uInvBaseHalf','uInvHeight','uMinAxis','uPxScale','uTimeScale'].forEach(n=>{ U[n] = gl.getUniformLocation(prog, n); });
+  const H = 3.5, BW = 5.5, BASE_HALF = BW*0.5, GLOW = 1, NOISE = 0, SAT = 1.5, SCALE = 3.6;
+  const HUE = 0, CFREQ = 1, BLOOM = 1, TS = 0.5;
+  const identity = new Float32Array([1,0,0, 0,1,0, 0,0,1]);
+  gl.uniform1f(U.uHeight, H);
+  gl.uniform1f(U.uBaseHalf, BASE_HALF);
+  gl.uniform1i(U.uUseBaseWobble, 1);
+  gl.uniform1f(U.uGlow, GLOW);
+  gl.uniform1f(U.uNoise, NOISE);
+  gl.uniform1f(U.uSaturation, SAT);
+  gl.uniform1f(U.uScale, SCALE);
+  gl.uniform1f(U.uHueShift, HUE);
+  gl.uniform1f(U.uColorFreq, CFREQ);
+  gl.uniform1f(U.uBloom, BLOOM);
+  gl.uniform1f(U.uCenterShift, 1.5);
+  gl.uniform1f(U.uInvBaseHalf, 1/BW);
+  gl.uniform1f(U.uInvHeight, 1/H);
+  gl.uniform1f(U.uMinAxis, Math.min(BASE_HALF, H));
+  gl.uniform1f(U.uTimeScale, TS);
+  gl.uniform2f(U.uOffsetPx, 0, 0);
+  gl.uniformMatrix3fv(U.uRot, false, identity);
+  function resize(){
+    const dpr = Math.min(window.devicePixelRatio||1, 2);
+    const w = Math.max(1, Math.floor(window.innerWidth*dpr));
+    const h = Math.max(1, Math.floor(window.innerHeight*dpr));
+    canvas.width = w; canvas.height = h;
+    gl.viewport(0, 0, w, h);
+    // 用短边作基准：f_max(短边) = BH，棱镜完整居中显示；SCALE 大 → 棱镜更大
+    const minDim = Math.min(w, h);
+    gl.uniform1f(U.uPxScale, 7.2 * BASE_HALF / (minDim * SCALE));
+  }
+  resize();
+  window.addEventListener('resize', resize);
+  const t0 = performance.now();
+  function frame(now){
+    if(!canvas.isConnected){ prismCanvas = null; prismRAF = 0; return; }
+    gl.uniform1f(U.iTime, (now - t0)*0.001);
+    gl.uniform2f(U.iResolution, gl.drawingBufferWidth, gl.drawingBufferHeight);
+    // 屏幕 resize 时也更新 uPxScale
+    const minDim = Math.min(gl.drawingBufferWidth, gl.drawingBufferHeight);
+    gl.uniform1f(U.uPxScale, 7.2 * BASE_HALF / (minDim * SCALE));
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+    prismRAF = requestAnimationFrame(frame);
+  }
+  prismRAF = requestAnimationFrame(frame);
+}
+
+render();
+</script>
+</body>
+</html>
