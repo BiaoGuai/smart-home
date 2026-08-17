@@ -1,19 +1,5 @@
 {
-  "version": 2,
-  "builds": [
-    {
-      "src": "api/router.js",
-      "use": "@vercel/node",
-      "config": { "runtime": "nodejs20.x" }
-    }
-  ],
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/router.js" }
-  ],
-  "functions": {
-    "api/router.js": {
-      "runtime": "nodejs20.x",
-      "maxDuration": 30
-    }
-  }
+  ]
 }
