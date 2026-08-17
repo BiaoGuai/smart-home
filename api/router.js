@@ -1,13 +1,22 @@
 // Vercel Serverless Function：全屋智能选品完整 API（数据层 = Supabase）
 // 对应原 server.js 的全部接口，数据从 data.json 迁移到 Supabase Postgres
-const { createClient } = require('@supabase/supabase-js');
 const crypto = require('crypto');
 
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY,
-  { auth: { persistSession: false } }
-);
+let supabase = null;
+let startupError = null;
+try {
+  const { createClient } = require('@supabase/supabase-js');
+  supabase = createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY,
+    { auth: { persistSession: false } }
+  );
+  console.error('[smart-home] supabase client ok. url_set=' + !!process.env.SUPABASE_URL + ' key_set=' + !!process.env.SUPABASE_SERVICE_ROLE_KEY);
+} catch (e) {
+  startupError = e;
+  console.error('[smart-home] STARTUP_ERROR:', e.message);
+  console.error('[smart-home] STARTUP_STACK:', e.stack);
+}
 
 function hashPassword(password, salt) { return crypto.scryptSync(password, salt, 64).toString('hex'); }
 function genSalt() { return crypto.randomBytes(16).toString('hex'); }
@@ -53,6 +62,18 @@ async function getAuthUser(req) {
 }
 
 module.exports = async function handler(req, res) {
+  if (startupError) {
+    return json(res, 500, {
+      startupError: startupError.message,
+      startupStack: startupError.stack,
+      env: {
+        SUPABASE_URL_set: !!process.env.SUPABASE_URL,
+        SUPABASE_SERVICE_ROLE_KEY_set: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+        VERCEL: process.env.VERCEL || null,
+        VERCEL_REGION: process.env.VERCEL_REGION || null
+      }
+    });
+  }
   if (req.method === 'OPTIONS') {
     res.statusCode = 204;
     res.setHeader('Access-Control-Allow-Origin', '*');
