@@ -1,11 +1,3 @@
 {
-  "version": 2,
-  "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api/router" }
-  ],
-  "functions": {
-    "api/router.js": {
-      "maxDuration": 30
-    }
-  }
+  "version": 2
 }
