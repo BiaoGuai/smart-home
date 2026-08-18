@@ -1,7 +1,10 @@
 {
   "version": 2,
   "builds": [
-    { "src": "api/router.js", "use": "@vercel/node" }
+    { "src": "api/router.js", "use": "@vercel/node" },
+    { "src": "*.html", "use": "@vercel/static" },
+    { "src": "public/**", "use": "@vercel/static" },
+    { "src": "supabase/**", "use": "@vercel/static" }
   ],
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/router.js" }
